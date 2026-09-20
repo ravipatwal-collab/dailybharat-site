@@ -50,13 +50,24 @@ def build_payload(v):
             "bullets": bullets[:120], "keywords": kw}
 
 
-def valid(src, out):
+def problem(src, out):
+    """Why `out` is unusable, or "" when it is fine."""
     if not isinstance(out, dict) or not isinstance(out.get("title"), str) or not out["title"].strip():
-        return False
+        return "missing/blank title"
     for k in ("summary", "chapters", "bullets", "keywords"):
-        if not isinstance(out.get(k), list) or len(out[k]) != len(src[k]) or not all(isinstance(x, str) and x.strip() for x in out[k]):
-            return False
-    return not re.search("[ऀ-ॿ]{3,}", json.dumps(out, ensure_ascii=False))
+        got = out.get(k)
+        if not isinstance(got, list):
+            return f"{k} is not a list"
+        if len(got) != len(src[k]):
+            return f"{k}: {len(got)} items, expected {len(src[k])}"
+        if not all(isinstance(x, str) and x.strip() for x in got):
+            return f"{k} has a blank/non-string item"
+    left = re.findall("[ऀ-ॿ]{3,}", json.dumps(out, ensure_ascii=False))
+    return f"Hindi text left: {left[:3]}" if left else ""
+
+
+def valid(src, out):
+    return not problem(src, out)
 
 
 def main():
@@ -75,11 +86,12 @@ def main():
         except Exception as exc:  # noqa: BLE001 -- never fail the workflow over a translation
             print("translate failed for", v["id"], exc, file=sys.stderr)
             continue
-        if valid(src, out):
+        why = problem(src, out)
+        if not why:
             tr[v["id"]] = {k: out[k] for k in ("title", "summary", "chapters", "bullets", "keywords")}
             done += 1
         else:
-            print("translation rejected (shape/Hindi left) for", v["id"], file=sys.stderr)
+            print("translation rejected for", v["id"], "-", why, file=sys.stderr)
     if done:
         build.TR_FILE.write_text(json.dumps(tr, ensure_ascii=False, indent=1), encoding="utf8")
     print(f"translated {done} of {len(todo)} pending videos")
