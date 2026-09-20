@@ -2,7 +2,7 @@
 """Translate new videos' Hindi title/summary/chapters/headlines into English.
 
 Runs in the scheduled workflow between two build.py passes. It only acts when
-the ANTHROPIC_API_KEY repository secret is set, translates videos that have no
+the GEMINI_API_KEY repository secret is set, translates videos that have no
 entry in data/translations.json yet (max MAX_PER_RUN per run), and never fails
 the workflow: an untranslated video simply shows its Hindi text (tagged
 lang="hi") until the next run.
@@ -15,9 +15,9 @@ import urllib.request
 
 import build
 
-MODEL = os.environ.get("TRANSLATE_MODEL", "claude-haiku-4-5-20251001")
+MODEL = os.environ.get("TRANSLATE_MODEL", "gemini-2.5-flash")
 MAX_PER_RUN = 12
-API = "https://api.anthropic.com/v1/messages"
+API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
 PROMPT = """Translate this Hindi news-video metadata into natural English. Return ONLY a JSON object with exactly
 the keys title (string), summary, chapters, bullets, keywords (lists of strings), and each list must have EXACTLY the
@@ -31,12 +31,14 @@ INPUT:
 
 
 def call_api(key, payload):
-    body = json.dumps({"model": MODEL, "max_tokens": 6000, "messages": [
-        {"role": "user", "content": PROMPT + json.dumps(payload, ensure_ascii=False)}]}).encode()
-    req = urllib.request.Request(API, data=body, headers={
-        "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json"})
+    body = json.dumps({
+        "contents": [{"role": "user", "parts": [{"text": PROMPT + json.dumps(payload, ensure_ascii=False)}]}],
+        "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2},
+    }).encode()
+    req = urllib.request.Request(API.format(model=MODEL), data=body, headers={
+        "x-goog-api-key": key, "content-type": "application/json"})
     with urllib.request.urlopen(req, timeout=120) as r:
-        text = json.loads(r.read())["content"][0]["text"]
+        text = json.loads(r.read())["candidates"][0]["content"]["parts"][0]["text"]
     m = re.search(r"\{.*\}", text, re.S)
     return json.loads(m.group(0))
 
@@ -58,9 +60,9 @@ def valid(src, out):
 
 
 def main():
-    key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
-        print("ANTHROPIC_API_KEY not set: skipping translation")
+        print("GEMINI_API_KEY not set: skipping translation")
         return 0
     vids = json.loads(build.DATA.read_text(encoding="utf8"))
     tr = dict(build.TR)

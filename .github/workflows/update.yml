@@ -21,9 +21,9 @@ jobs:
           python-version: "3.12"
       - name: Fetch latest videos and rebuild pages
         run: python build.py
-      - name: Translate new videos to English (only if ANTHROPIC_API_KEY secret is set)
+      - name: Translate new videos to English (only if GEMINI_API_KEY secret is set)
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python translate.py
       - name: Rebuild with translations
         run: python build.py
