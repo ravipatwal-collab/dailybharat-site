@@ -1,0 +1,126 @@
+[
+ {
+  "id": "PLXsNxnSMa1RE",
+  "color": 0,
+  "video_ids": [
+   "U5J-lFFP2hM",
+   "E0ppVTF7qgk",
+   "d3w0Nf92TnM",
+   "oA5Fc9By8Vc",
+   "3WEBT8Ak2kQ"
+  ],
+  "title": "खास रिपोर्ट | Daily Bharat Explainers",
+  "slug": "daily-bharat-explainers"
+ },
+ {
+  "id": "PLLywfg6K5S0w",
+  "color": 1,
+  "video_ids": [
+   "xgatNCfDBSs",
+   "g4eRCMGmBSY",
+   "zH_2UaubOTk",
+   "xCJ3_nGSqOE",
+   "ks1cYEY7z04",
+   "2DD3xlNuryo"
+  ],
+  "title": "Daily Bharat Shorts | हिंदी न्यूज़ शॉर्ट्स",
+  "slug": "daily-bharat-shorts"
+ },
+ {
+  "id": "PLDrnjpzTg8CM",
+  "color": 2,
+  "video_ids": [
+   "2IRGIl8iqqY",
+   "TEWHuDw1p2Y",
+   "DwzifOEiQ8Q",
+   "6hz9I5rCnQA",
+   "VhcxJX5nbqc",
+   "CW_6nMqyTko",
+   "a0wxiObkVKE",
+   "Pt-rOzWwbww",
+   "DOpwFOVIC7c"
+  ],
+  "title": "सोना चांदी का भाव आज का | Gold Silver Rate Today",
+  "slug": "gold-silver-rate-today"
+ },
+ {
+  "id": "PLO0eoDyu_EIc",
+  "color": 3,
+  "video_ids": [
+   "qrXKmBQcGZI",
+   "GZZGUDdNeuc",
+   "hSid3WnDT9g",
+   "-4jFRxpMHnQ",
+   "iBHYAiUU18Y",
+   "pMNF56HTc8M",
+   "5MuMmKDo1pc",
+   "EKvb36LjIQI",
+   "Wjw2qZxazrA"
+  ],
+  "title": "बाकी 100 खबरें 10 मिनट में | Daily Bharat Nonstop News",
+  "slug": "daily-bharat-nonstop-news"
+ },
+ {
+  "id": "PLJrF3rAmP3JM",
+  "color": 4,
+  "video_ids": [
+   "pYhjwfDrxg0",
+   "2IRGIl8iqqY",
+   "TEWHuDw1p2Y",
+   "DwzifOEiQ8Q",
+   "VhcxJX5nbqc",
+   "CW_6nMqyTko",
+   "a0wxiObkVKE",
+   "Pt-rOzWwbww",
+   "DOpwFOVIC7c"
+  ],
+  "title": "शेयर बाज़ार की खबरें | Share Market News Hindi",
+  "slug": "share-market-news-hindi"
+ },
+ {
+  "id": "PLRLHxmavHAg4",
+  "color": 5,
+  "video_ids": [
+   "pYhjwfDrxg0",
+   "2IRGIl8iqqY",
+   "TEWHuDw1p2Y",
+   "DwzifOEiQ8Q",
+   "6hz9I5rCnQA",
+   "VhcxJX5nbqc",
+   "CW_6nMqyTko",
+   "a0wxiObkVKE",
+   "Pt-rOzWwbww",
+   "DOpwFOVIC7c"
+  ],
+  "title": "दुनिया की खबरें | International News Hindi",
+  "slug": "international-news-hindi"
+ },
+ {
+  "id": "PLX30Dcz4DyOo",
+  "color": 6,
+  "video_ids": [
+   "pYhjwfDrxg0",
+   "6hz9I5rCnQA"
+  ],
+  "title": "मौसम की जानकारी | Weather Update Hindi",
+  "slug": "weather-update-hindi"
+ },
+ {
+  "id": "PLEcM4ELH08mU",
+  "color": 7,
+  "video_ids": [
+   "DOpwFOVIC7c",
+   "Pt-rOzWwbww",
+   "a0wxiObkVKE",
+   "CW_6nMqyTko",
+   "VhcxJX5nbqc",
+   "6hz9I5rCnQA",
+   "DwzifOEiQ8Q",
+   "TEWHuDw1p2Y",
+   "2IRGIl8iqqY",
+   "pYhjwfDrxg0"
+  ],
+  "title": "आज की ताज़ा खबर | Daily Bharat Hindi News Bulletin",
+  "slug": "daily-bharat-hindi-news-bulletin"
+ }
+]

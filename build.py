@@ -28,15 +28,15 @@ NAME = "Daily Bharat News"
 EMAIL = "dailybharat10@gmail.com"
 DATA = ROOT / "data" / "videos.json"
 IST = timezone(timedelta(hours=5, minutes=30))
-WEEK = ["सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार", "रविवार"]
-MONTH = ["जनवरी", "फ़रवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त",
-         "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"]
+WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+MONTH = ["January", "February", "March", "April", "May", "June", "July", "August",
+         "September", "October", "November", "December"]
 
 KINDS = {  # key: (label, css colour class, section heading)
-    "bulletin": ("ताज़ा बुलेटिन", "k-saffron", "आज की ताज़ा खबर"),
-    "hundred": ("100 ख़बरें", "k-blue", "बाकी करीब 100 ख़बरें, 10 मिनट में"),
-    "story": ("पूरी कहानी", "k-violet", "पूरी कहानी: एक खबर, पूरी जानकारी"),
-    "short": ("शॉर्ट", "k-pink", "फटाफट शॉर्ट्स"),
+    "bulletin": ("Daily Bulletin", "k-saffron", "Today's News Bulletin"),
+    "hundred": ("100 News", "k-blue", "100 More Headlines in 10 Minutes"),
+    "story": ("Full Story", "k-violet", "Full Story: One News, Explained"),
+    "short": ("Short", "k-pink", "Quick Shorts"),
 }
 
 ICON = {
@@ -91,6 +91,11 @@ def load_videos():
             vids[v["id"]] = v
     except Exception as exc:  # network down: build from what we already have
         print("feed fetch failed, using stored data:", exc, file=sys.stderr)
+    global PLAYLISTS
+    try:
+        PLAYLISTS = sync_playlists(vids)
+    except Exception as exc:  # never lose the video pages over a playlist problem
+        print("playlist sync failed:", exc, file=sys.stderr)
     for v in vids.values():
         v["kind"] = classify(v)
     out = sorted(vids.values(), key=lambda v: v["published"], reverse=True)
@@ -162,6 +167,17 @@ def parse_desc(desc):
     return chapters, paras, bullets, credits
 
 
+def seo_parts(desc):
+    """The description's own SEO layer: hashtags and the keyword line(s)."""
+    tags = list(dict.fromkeys(re.findall(r"#[^\s#]+", desc)))
+    kw = []
+    for raw in desc.replace("\r", "").split("\n"):
+        line = raw.strip()
+        if re.match(r"^\d{1,2} \w+ \d{4} \|", line) and ("Aaj Ki" in line or "Khabar" in line or "Hindi" in line):
+            kw.append(line)
+    return tags, kw
+
+
 def ts_seconds(ts):
     parts = [int(x) for x in ts.split(":")]
     s = 0
@@ -175,15 +191,20 @@ def autolink(text):
 
 
 # -------------------------------------------------------------- layout ---
-NAV = [("/", "होम"), ("/#bulletin", "ताज़ा बुलेटिन"), ("/#hundred", "100 ख़बरें"),
-       ("/#stories", "पूरी कहानी"), ("/archive/", "सभी वीडियो"), ("/#about", "हमारे बारे में")]
+NAV = [("/", "Home"), ("/#bulletin", "Daily Bulletin"), ("/#hundred", "100 News"),
+       ("/topics/", "Topics"), ("/archive/", "All Videos"), ("/#about", "About")]
+
+
+def hi(s):
+    """Hindi content (video titles, summaries) is tagged lang=hi inside the English page."""
+    return f'<span lang="hi">{esc(s)}</span>'
 
 
 def head(title, desc, path, image=None, extra="", og_type="website"):
     image = image or f"{SITE}/assets/img/og-default.png"
     url = SITE + path
     return f"""<!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -194,7 +215,7 @@ def head(title, desc, path, image=None, extra="", og_type="website"):
 <meta name="theme-color" content="#0a1233">
 <meta property="og:site_name" content="{NAME}">
 <meta property="og:type" content="{og_type}">
-<meta property="og:locale" content="hi_IN">
+<meta property="og:locale" content="en_IN">
 <meta property="og:title" content="{esc(title)}">
 <meta property="og:description" content="{esc(desc)}">
 <meta property="og:url" content="{url}">
@@ -228,7 +249,7 @@ ORG = {
     "logo": {"@type": "ImageObject", "url": SITE + "/assets/img/icon-512.png", "width": 512, "height": 512},
     "sameAs": [YT, f"https://www.youtube.com/channel/{CHANNEL_ID}"],
     "email": EMAIL,
-    "inLanguage": "hi",
+    "description": "A daily Hindi news bulletin on YouTube covering India and the world.",
     "ethicsPolicy": SITE + "/#about",
 }
 
@@ -236,14 +257,14 @@ ORG = {
 def header(active_path=""):
     links = "".join(f'<a href="{h}">{esc(t)}</a>' for h, t in NAV)
     return f"""<body>
-<a class="skip" href="#main">मुख्य सामग्री पर जाएँ</a>
+<a class="skip" href="#main">Skip to main content</a>
 <div class="tricolor" aria-hidden="true"></div>
 <header class="site-header">
   <div class="wrap bar">
-    <a class="brand" href="/" aria-label="{NAME} - होम"><img src="/assets/img/logo-mark.webp" width="120" height="63" alt="Daily भारत लोगो" fetchpriority="high"></a>
-    <nav class="nav" id="nav" aria-label="मुख्य मेनू">{links}</nav>
-    <a class="btn btn-red btn-sm" href="{SUBSCRIBE}" target="_blank" rel="noopener">{ICON['yt']}<span>सब्सक्राइब</span></a>
-    <button class="menu-btn" aria-label="मेनू खोलें" aria-expanded="false" aria-controls="nav">{ICON['menu']}</button>
+    <a class="brand" href="/" aria-label="{NAME} - Home"><img src="/assets/img/logo-mark.webp" width="120" height="63" alt="Daily Bharat logo" fetchpriority="high"></a>
+    <nav class="nav" id="nav" aria-label="Main menu">{links}</nav>
+    <a class="btn btn-red btn-sm" href="{SUBSCRIBE}" target="_blank" rel="noopener">{ICON['yt']}<span>Subscribe</span></a>
+    <button class="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="nav">{ICON['menu']}</button>
   </div>
 </header>
 """
@@ -253,9 +274,9 @@ def ticker(vids):
     items = [v for v in vids if v["kind"] in ("bulletin", "hundred", "story")][:8]
     if not items:
         return ""
-    row = "".join(f'<a href="/news/{v["id"]}/">{esc(clean_title(v["title"]))}</a>' for v in items)
-    return f"""<div class="ticker" role="region" aria-label="ताज़ा वीडियो">
-  <span class="ticker-tag">ताज़ा</span>
+    row = "".join(f'<a href="/news/{v["id"]}/" lang="hi">{esc(clean_title(v["title"]))}</a>' for v in items)
+    return f"""<div class="ticker" role="region" aria-label="Latest videos">
+  <span class="ticker-tag">LATEST</span>
   <div class="ticker-track"><div class="ticker-move">{row}{row}</div></div>
 </div>
 """
@@ -266,26 +287,27 @@ def footer():
     return f"""<footer class="site-footer">
   <div class="wrap foot-grid">
     <div>
-      <img src="/assets/img/logo-lockup.webp" width="200" height="127" alt="{NAME} लोगो" loading="lazy">
-      <p class="muted-l">देश-दुनिया की हर बड़ी खबर, सरल हिंदी में, हर सुबह।</p>
+      <img src="/assets/img/logo-lockup.webp" width="200" height="127" alt="{NAME} logo" loading="lazy">
+      <p class="muted-l">The big news from India and the world, in simple Hindi, every morning.</p>
     </div>
     <div>
-      <h3>देखें</h3>
-      <a href="{YT}" target="_blank" rel="noopener">YouTube चैनल {HANDLE}</a>
-      <a href="{SUBSCRIBE}" target="_blank" rel="noopener">सब्सक्राइब करें</a>
-      <a href="{YT}/videos" target="_blank" rel="noopener">सभी वीडियो (YouTube)</a>
+      <h3>Watch</h3>
+      <a href="{YT}" target="_blank" rel="noopener">YouTube channel {HANDLE}</a>
+      <a href="{SUBSCRIBE}" target="_blank" rel="noopener">Subscribe</a>
+      <a href="{YT}/videos" target="_blank" rel="noopener">All videos on YouTube</a>
       <a href="{YT}/shorts" target="_blank" rel="noopener">Shorts</a>
     </div>
     <div>
-      <h3>वेबसाइट</h3>
-      <a href="/archive/">वीडियो आर्काइव</a>
+      <h3>Website</h3>
+      <a href="/topics/">Topics</a>
+      <a href="/archive/">Video archive</a>
       <a href="/privacy-policy.html">Privacy Policy</a>
       <a href="/terms.html">Terms of Service</a>
       <a href="mailto:{EMAIL}">{EMAIL}</a>
     </div>
   </div>
   <div class="wrap foot-note">
-    <p>&copy; {yr} {NAME}. सभी वीडियो हमारे YouTube चैनल पर उपलब्ध हैं। कुछ दृश्य AI से बने प्रतीकात्मक चित्र हो सकते हैं; ऐसा हर वीडियो के विवरण में लिखा होता है।</p>
+    <p>&copy; {yr} {NAME}. All videos are on our YouTube channel. Some visuals may be AI-generated symbolic images; this is always stated in the video description.</p>
   </div>
 </footer>
 <script src="/assets/site.js" defer></script>
@@ -303,7 +325,7 @@ def card(v, size="", show_kind=True):
     <span class="play">{ICON['play']}</span>{badge}
   </a>
   <div class="card-body">
-    <h3><a href="/news/{v['id']}/">{esc(clean_title(v['title']))}</a></h3>
+    <h3><a href="/news/{v['id']}/" lang="hi">{esc(clean_title(v['title']))}</a></h3>
     <time datetime="{v['published']}">{hi_date(v['published'])}</time>
   </div>
 </article>
@@ -319,7 +341,7 @@ def section(sid, kind, vids, limit, intro=""):
     return f"""<section class="sec {cls}" id="{sid}">
   <div class="wrap">
     <div class="sec-head"><span class="sec-bar"></span><div><h2>{heading}</h2>{f'<p>{intro}</p>' if intro else ''}</div>
-      <a class="more" href="/archive/?k={kind}">सभी देखें {ICON['arrow']}</a></div>
+      <a class="more" href="/archive/?k={kind}">View all {ICON['arrow']}</a></div>
     <div class="grid {'grid-short' if kind=='short' else ''}">{cards}</div>
   </div>
 </section>
@@ -327,35 +349,34 @@ def section(sid, kind, vids, limit, intro=""):
 
 
 FAQ = [
-    ("आज की ताज़ा खबर कहाँ देखें?",
-     f"हर सुबह हमारा नया बुलेटिन YouTube चैनल {HANDLE} पर आता है, जिसमें देश और दुनिया की करीब 50 बड़ी खबरें होती हैं। इसी वेबसाइट के होम पेज पर सबसे नया वीडियो सबसे ऊपर मिलता है।"),
-    ("क्या Daily Bharat News पूरी तरह हिंदी में है?",
-     "हाँ। पूरा बुलेटिन, स्क्रीन के शब्द और आवाज़ सरल शुद्ध हिंदी में हैं। अंग्रेज़ी स्रोतों की खबरें भी हिंदी में अनुवाद करके ही दिखाई जाती हैं।"),
-    ("खबरें कहाँ से ली जाती हैं?",
-     "सरकारी विज्ञप्तियों (जैसे PIB) और प्रमुख हिंदी-अंग्रेज़ी अख़बारों से। हम दलों के आपसी आरोप-प्रत्यारोप और सांप्रदायिक विवाद वाली खबरें नहीं दिखाते; ज़ोर नीति, योजनाओं और तथ्यों पर रहता है।"),
-    ("100 ख़बरें 10 मिनट में क्या है?",
-     "मुख्य बुलेटिन के बाद की बाकी करीब 100 खबरें हम एक अलग तेज़ वीडियो में देते हैं, ताकि 10 मिनट में आप पूरे दिन की तस्वीर देख सकें।"),
-    ("क्या वीडियो में AI का इस्तेमाल होता है?",
-     "कुछ वीडियो में प्रतीकात्मक चित्र AI से बनाए जाते हैं। ऐसे हर वीडियो के विवरण में यह साफ़ लिखा होता है, और असली तस्वीरों के लिए चित्र-साभार भी दिया जाता है।"),
-    ("नया वीडियो कैसे नहीं छूटेगा?",
-     "YouTube पर चैनल सब्सक्राइब करें और घंटी (Bell) आइकन दबाकर \"सभी\" चुनें। फिर हर नया बुलेटिन सीधे आपके फ़ोन पर सूचना के रूप में आएगा।"),
+    ("Where can I watch today's Hindi news bulletin?",
+     f"A new bulletin is published every morning on our YouTube channel {HANDLE}, with about 50 top stories from India and the world. The newest video is always at the top of this website's home page."),
+    ("Is Daily Bharat News only in Hindi?",
+     "Yes. The bulletin, the on-screen text and the voice are all in simple Hindi. News from English-language sources is translated into Hindi before it is shown. This website's menus are in English so it is easy to find your way; video titles stay in Hindi, exactly as on YouTube."),
+    ("Where does the news come from?",
+     "From government releases (such as the Press Information Bureau) and leading Hindi and English newspapers. We do not cover party-versus-party attacks or communal disputes; the focus is on policies, schemes and facts."),
+    ("What is '100 News in 10 Minutes'?",
+     "After the main bulletin we publish a second, faster video with the rest of the day's roughly 100 headlines, so you can get the full picture of the day in 10 minutes."),
+    ("Do the videos use AI?",
+     "Some videos use AI-generated symbolic images. Every such video says so clearly in its description, and real photographs are credited."),
+    ("How do I make sure I never miss a video?",
+     "Subscribe to the channel on YouTube, tap the bell icon and choose \"All\". Every new bulletin then arrives as a notification on your phone."),
 ]
 
 
 def build_home(vids):
     latest = next((v for v in vids if v["kind"] == "bulletin"), vids[0])
-    hundred = next((v for v in vids if v["kind"] == "hundred"), None)
-    title = f"{NAME} | आज की ताज़ा खबर, Hindi News Today - देश-दुनिया की हर बड़ी खबर"
-    desc = ("हर सुबह देश-दुनिया की करीब 50 बड़ी खबरें सरल हिंदी में। आज की ताज़ा खबर, राष्ट्रीय, अंतरराष्ट्रीय, बाज़ार, सोना-चांदी भाव और राज्य समाचार का "
-            "पूरा बुलेटिन देखें और Daily Bharat News YouTube चैनल को सब्सक्राइब करें।")
+    title = "Daily Bharat News: Today's Hindi News Bulletin, Top India & World Headlines"
+    desc = ("Watch the Daily Bharat News Hindi bulletin every morning: about 50 top headlines from India and the world, "
+            "plus 100 more in 10 minutes. Aaj ki taaza khabar, markets, gold and silver rates and state news. Subscribe on YouTube.")
     items = [v for v in vids if v["kind"] != "short"][:10]
     graph = [
         ORG,
-        {"@type": "WebSite", "@id": SITE + "/#site", "url": SITE + "/", "name": NAME, "inLanguage": "hi",
+        {"@type": "WebSite", "@id": SITE + "/#site", "url": SITE + "/", "name": NAME, "inLanguage": "en",
          "publisher": {"@id": SITE + "/#org"}},
-        {"@type": "WebPage", "@id": SITE + "/#page", "url": SITE + "/", "name": title, "description": desc, "inLanguage": "hi",
+        {"@type": "WebPage", "@id": SITE + "/#page", "url": SITE + "/", "name": title, "description": desc, "inLanguage": "en",
          "isPartOf": {"@id": SITE + "/#site"}, "about": {"@id": SITE + "/#org"}},
-        {"@type": "ItemList", "name": "ताज़ा वीडियो", "itemListElement": [
+        {"@type": "ItemList", "name": "Latest videos", "itemListElement": [
             {"@type": "ListItem", "position": i + 1, "url": watch_url(v), "name": clean_title(v["title"])}
             for i, v in enumerate(items)]},
         {"@type": "FAQPage", "mainEntity": [
@@ -364,17 +385,17 @@ def build_home(vids):
     extra = ld({"@context": "https://schema.org", "@graph": graph})
     faq = "".join(f"<details><summary>{esc(q)}</summary><p>{esc(a)}</p></details>" for q, a in FAQ)
     why = [
-        ("clock", "c-saffron", "हर सुबह, समय पर", "रोज़ सुबह नया बुलेटिन तैयार, ताकि चाय के साथ पूरे दिन की खबरें आपके पास हों।"),
-        ("lang", "c-blue", "सरल शुद्ध हिंदी", "आसान भाषा, साफ़ आवाज़ और स्क्रीन पर पढ़ने लायक शब्द। कोई मुश्किल शब्द नहीं।"),
-        ("shield", "c-green", "शोर नहीं, तथ्य", "दलगत आरोप-प्रत्यारोप और सांप्रदायिक विवाद नहीं। नीति, योजनाएँ और असली जानकारी।"),
-        ("paper", "c-violet", "भरोसेमंद स्रोत", "सरकारी विज्ञप्तियों और प्रमुख अख़बारों की खबरें, एक ही बुलेटिन में।"),
+        ("clock", "c-saffron", "On time, every morning", "A fresh bulletin is ready every morning, so you have the whole day's news with your tea."),
+        ("lang", "c-blue", "Simple Hindi", "Easy language, a clear voice and readable on-screen text. No difficult words."),
+        ("shield", "c-green", "Facts, not noise", "No party-versus-party attacks or communal disputes. Policies, schemes and real information."),
+        ("paper", "c-violet", "Trusted sources", "News from government releases and leading newspapers, all in one bulletin."),
     ]
     why_html = "".join(
         f'<div class="why {c}"><span class="why-ic">{ICON[i]}</span><h3>{t}</h3><p>{p}</p></div>' for i, c, t, p in why)
     hero_card = f"""<a class="feature" href="/news/{latest['id']}/">
-      <span class="feature-tag">सबसे नया बुलेटिन</span>
+      <span class="feature-tag">Latest bulletin</span>
       <span class="feature-img"><img src="{thumb(latest,'maxres')}" onerror="this.onerror=null;this.src='{thumb(latest)}'" width="1280" height="720" alt="{esc(clean_title(latest['title']))}" fetchpriority="high"><span class="play big">{ICON['play']}</span></span>
-      <span class="feature-body"><strong>{esc(clean_title(latest['title']))}</strong><time datetime="{latest['published']}">{hi_date(latest['published'])}</time></span>
+      <span class="feature-body"><strong lang="hi">{esc(clean_title(latest['title']))}</strong><time datetime="{latest['published']}">{hi_date(latest['published'])}</time></span>
     </a>"""
     body = f"""{header()}
 {ticker(vids)}
@@ -383,46 +404,47 @@ def build_home(vids):
   <div class="hero-glow" aria-hidden="true"></div>
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <p class="eyebrow">डेली न्यूज़ बुलेटिन &middot; {HANDLE}</p>
-      <h1>देश-दुनिया की <span class="grad">हर बड़ी खबर</span>, हर सुबह, सरल हिंदी में</h1>
-      <p class="lead">आज की ताज़ा खबर, राष्ट्रीय और अंतरराष्ट्रीय समाचार, बाज़ार, सोना-चांदी भाव और राज्य समाचार, सब एक ही बुलेटिन में। YouTube पर देखें और नया वीडियो कभी न छोड़ें।</p>
+      <p class="eyebrow">Daily Hindi news bulletin &middot; {HANDLE}</p>
+      <h1>The <span class="grad">biggest news</span> from India and the world, every morning, in simple Hindi</h1>
+      <p class="lead">Today's top headlines (aaj ki taaza khabar), national and international news, markets, gold and silver rates and state news, all in one short bulletin. Watch on YouTube and never miss a new video.</p>
       <div class="cta-row">
-        <a class="btn btn-red" href="{SUBSCRIBE}" target="_blank" rel="noopener">{ICON['yt']}<span>YouTube पर सब्सक्राइब करें</span></a>
-        <a class="btn btn-ghost" href="/news/{latest['id']}/">{ICON['play']}<span>आज का बुलेटिन देखें</span></a>
+        <a class="btn btn-red" href="{SUBSCRIBE}" target="_blank" rel="noopener">{ICON['yt']}<span>Subscribe on YouTube</span></a>
+        <a class="btn btn-ghost" href="/news/{latest['id']}/">{ICON['play']}<span>Watch today's bulletin</span></a>
       </div>
       <ul class="chips">
-        <li class="c-saffron">रोज़ सुबह नया बुलेटिन</li>
-        <li class="c-green">करीब 50 बड़ी खबरें</li>
-        <li class="c-blue">बाकी 100 ख़बरें, 10 मिनट में</li>
-        <li class="c-pink">100% हिंदी</li>
+        <li class="c-saffron">New bulletin every morning</li>
+        <li class="c-green">About 50 top stories</li>
+        <li class="c-blue">100 more in 10 minutes</li>
+        <li class="c-pink">Simple Hindi</li>
       </ul>
     </div>
     <div class="hero-card">{hero_card}</div>
   </div>
 </section>
-{section('bulletin','bulletin',vids,4,'हर सुबह की मुख्य खबरें: राष्ट्रीय, अंतरराष्ट्रीय, बाज़ार और राज्य।')}
-{section('hundred','hundred',vids,3,'कम समय में ज़्यादा खबरें: पूरे दिन की बाकी सुर्खियाँ।')}
-{section('stories','story',vids,6,'एक बड़ी खबर की पूरी पड़ताल, आसान भाषा में।')}
+{section('bulletin','bulletin',vids,4,"The morning's top stories: national, international, markets and states.")}
+{section('hundred','hundred',vids,3,"More news in less time: the rest of the day's headlines.")}
+{section('stories','story',vids,6,"One big story, investigated and explained clearly.")}
 {section('shorts','short',vids,6)}
+{topics_section(vids)}
 <section class="sec why-sec">
   <div class="wrap">
-    <div class="sec-head center"><div><h2>Daily Bharat News क्यों देखें?</h2><p>समय कम है, खबरें ज़्यादा। हम आपका समय बचाते हैं।</p></div></div>
+    <div class="sec-head center"><div><h2>Why watch Daily Bharat News?</h2><p>Less time, more news. We save yours.</p></div></div>
     <div class="why-grid">{why_html}</div>
   </div>
 </section>
 <section class="subscribe" id="subscribe">
   <div class="wrap sub-grid">
     <div>
-      <h2>एक भी खबर मत छोड़िए</h2>
-      <p>चैनल सब्सक्राइब करें और घंटी दबाएँ। हर सुबह का बुलेटिन सीधे आपके फ़ोन पर।</p>
+      <h2>Never miss a story</h2>
+      <p>Subscribe to the channel and tap the bell. Every morning's bulletin comes straight to your phone.</p>
       <ol class="steps">
-        <li><b>1</b> YouTube पर {HANDLE} खोलें</li>
-        <li><b>2</b> <em>Subscribe</em> दबाएँ</li>
-        <li><b>3</b> घंटी {ICON['bell']} दबाकर <em>All</em> चुनें</li>
+        <li><b>1</b> Open {HANDLE} on YouTube</li>
+        <li><b>2</b> Tap <em>Subscribe</em></li>
+        <li><b>3</b> Tap the bell {ICON['bell']} and choose <em>All</em></li>
       </ol>
       <div class="cta-row">
-        <a class="btn btn-white" href="{SUBSCRIBE}" target="_blank" rel="noopener">{ICON['yt']}<span>अभी सब्सक्राइब करें</span></a>
-        <a class="btn btn-outline" href="{YT}" target="_blank" rel="noopener"><span>चैनल खोलें</span>{ICON['arrow']}</a>
+        <a class="btn btn-white" href="{SUBSCRIBE}" target="_blank" rel="noopener">{ICON['yt']}<span>Subscribe now</span></a>
+        <a class="btn btn-outline" href="{YT}" target="_blank" rel="noopener"><span>Open channel</span>{ICON['arrow']}</a>
       </div>
     </div>
     <div class="sub-art" aria-hidden="true"><div class="bell">{ICON['bell']}</div><div class="ring r1"></div><div class="ring r2"></div></div>
@@ -430,16 +452,15 @@ def build_home(vids):
 </section>
 <section class="sec faq-sec" id="faq">
   <div class="wrap narrow">
-    <div class="sec-head center"><div><h2>अक्सर पूछे जाने वाले सवाल</h2></div></div>
+    <div class="sec-head center"><div><h2>Frequently asked questions</h2></div></div>
     <div class="faq">{faq}</div>
   </div>
 </section>
 <section class="sec about" id="about">
   <div class="wrap narrow">
-    <h2>हमारे बारे में</h2>
-    <p><strong>{NAME}</strong> (डेली भारत न्यूज़) एक हिंदी समाचार चैनल है। हम हर सुबह देश और दुनिया की प्रमुख खबरें सरल हिंदी में एक बुलेटिन के रूप में YouTube पर प्रकाशित करते हैं। खबरें सरकारी विज्ञप्तियों और प्रमुख अख़बारों से ली जाती हैं।</p>
-    <p class="fine">इस वेबसाइट के बारे में: यह {NAME} चैनल का आधिकारिक होम पेज है। हमारा अपना प्रकाशन टूल Google की YouTube APIs का उपयोग केवल हमारे अपने चैनल पर वीडियो अपलोड करने और हमारे अपने चैनल के एनालिटिक्स पढ़ने के लिए करता है। इसे केवल चैनल-स्वामी उपयोग करता है; यह जनता के लिए साइन-इन नहीं देता और आगंतुकों या दर्शकों का कोई डेटा इकट्ठा नहीं करता। विवरण: <a href="/privacy-policy.html">Privacy Policy</a> और <a href="/terms.html">Terms of Service</a>। संपर्क: <a href="mailto:{EMAIL}">{EMAIL}</a>।</p>
-    <p class="fine en">Official home page of the {NAME} YouTube channel: a daily Hindi news bulletin covering India and the world. This site collects no visitor data; see the <a href="/privacy-policy.html">Privacy Policy</a> for how our own publishing tool uses Google YouTube APIs.</p>
+    <h2>About Daily Bharat News</h2>
+    <p><strong>{NAME}</strong> (<span lang="hi">डेली भारत न्यूज़</span>) is a Hindi news channel. Every morning we publish the day's main news from India and the world, in simple Hindi, as one bulletin on YouTube. News is drawn from government releases and leading newspapers.</p>
+    <p class="fine">About this website: this is the official home page of the {NAME} channel. Our own publishing tool uses Google's YouTube APIs only to upload videos to our own channel and to read our own channel's analytics. It is used only by the channel owner, offers no public sign-in, and collects no data from visitors or viewers. See the <a href="/privacy-policy.html">Privacy Policy</a> and <a href="/terms.html">Terms of Service</a>. Contact: <a href="mailto:{EMAIL}">{EMAIL}</a>.</p>
   </div>
 </section>
 </main>
@@ -451,10 +472,12 @@ def build_watch(v, vids):
     label, cls, _ = KINDS[v["kind"]]
     ttl = clean_title(v["title"])
     chapters, paras, bullets, credits = parse_desc(v["desc"])
+    tags, kwlines = seo_parts(v["desc"])
+    phrases = [p.strip() for ln in kwlines for p in ln.split("|")[-1].split(",") if p.strip()]
     summary = paras[0] if paras else ""
     dline = hi_date(v["published"])
-    meta_desc = (f"{dline} | {ttl}. " + (summary[:150] + "…" if summary else f"{NAME} पर देखें।"))[:300]
-    page_title = f"{ttl} | {NAME}"
+    meta_desc = f"{label} from Daily Bharat News, {dline}: {ttl}. " + (summary[:120] + "…" if summary else "Watch on YouTube.")
+    page_title = f"{ttl} | {label}, {dline} | {NAME}"
     url = watch_url(v)
     video_ld = {
         "@context": "https://schema.org", "@type": "VideoObject", "name": ttl,
@@ -462,54 +485,63 @@ def build_watch(v, vids):
         "uploadDate": v["published"], "embedUrl": f"https://www.youtube.com/embed/{v['id']}",
         "url": url, "inLanguage": "hi", "publisher": ORG,
         "isFamilyFriendly": True,
+        "keywords": ", ".join(dict.fromkeys([t.lstrip("#") for t in tags] + phrases))[:500],
     }
     crumbs = {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
-        {"@type": "ListItem", "position": 1, "name": "होम", "item": SITE + "/"},
-        {"@type": "ListItem", "position": 2, "name": "वीडियो", "item": SITE + "/archive/"},
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": SITE + "/"},
+        {"@type": "ListItem", "position": 2, "name": "Videos", "item": SITE + "/archive/"},
         {"@type": "ListItem", "position": 3, "name": ttl, "item": url}]}
     extra = ld(video_ld) + ld(crumbs)
     chap_html = ""
     if chapters:
         rows = "".join(
-            f'<li><a href="https://www.youtube.com/watch?v={v["id"]}&amp;t={ts_seconds(t)}s" target="_blank" rel="noopener"><b>{t}</b> {esc(n)}</a></li>'
+            f'<li><a href="https://www.youtube.com/watch?v={v["id"]}&amp;t={ts_seconds(t)}s" target="_blank" rel="noopener"><b>{t}</b> {hi(n)}</a></li>'
             for t, n in chapters)
-        chap_html = f'<section class="panel"><h2>इस वीडियो में क्या है</h2><ol class="chapters">{rows}</ol></section>'
-    sum_html = "".join(f"<p>{esc(p)}</p>" for p in paras[:3])
+        chap_html = f'<section class="panel"><h2>What is in this video</h2><ol class="chapters">{rows}</ol></section>'
+    sum_html = "".join(f'<p lang="hi">{esc(p)}</p>' for p in paras[:3])
     bl_html = ""
     if bullets:
-        bl_html = ('<section class="panel"><h2>आज की सुर्खियाँ</h2><ul class="heads">'
-                   + "".join(f"<li>{esc(b)}</li>" for b in bullets[:120]) + "</ul></section>")
+        bl_html = ('<section class="panel"><h2>Headlines covered</h2><ul class="heads">'
+                   + "".join(f'<li lang="hi">{esc(b)}</li>' for b in bullets[:120]) + "</ul></section>")
     cr_html = ""
     if credits:
-        cr_html = '<section class="panel credits"><h2>चित्र साभार</h2>' + "".join(f"<p>{autolink(c)}</p>" for c in credits) + "</section>"
+        cr_html = '<section class="panel credits"><h2>Image credits</h2>' + "".join(f"<p>{autolink(c)}</p>" for c in credits) + "</section>"
+    kw_html = ""
+    if kwlines or tags:
+        kw_html = ('<section class="panel seo"><h2>Video keywords and tags</h2>'
+                   + "".join(f'<p lang="hi">{esc(k)}</p>' for k in kwlines)
+                   + ('<p class="tags">' + " ".join(f'<span lang="hi">{esc(t)}</span>' for t in tags) + "</p>" if tags else "")
+                   + "</section>")
     related = [x for x in vids if x["id"] != v["id"] and x["kind"] != "short"][:6]
     rel_html = "".join(card(x) for x in related)
     body = f"""{header()}
 <main id="main" class="watch">
 <div class="wrap narrow2">
-  <nav class="crumbs" aria-label="ब्रेडक्रम्ब"><a href="/">होम</a> / <a href="/archive/">वीडियो</a> / <span>{label}</span></nav>
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/archive/">Videos</a> / <span>{label}</span></nav>
   <span class="badge {cls}">{label}</span>
-  <h1>{esc(ttl)}</h1>
-  <p class="meta"><time datetime="{v['published']}">{dline}</time> &middot; {NAME}</p>
+  <h1 lang="hi">{esc(ttl)}</h1>
+  <p class="meta"><time datetime="{v['published']}">{dline}</time> &middot; {label} &middot; Hindi news by {NAME}</p>
+  {topic_chips(v, vids)}
   <div class="player {'player-short' if v['kind']=='short' else ''}" data-id="{v['id']}">
-    <button class="player-btn" type="button" aria-label="वीडियो चलाएँ: {esc(ttl)}">
+    <button class="player-btn" type="button" aria-label="Play video: {esc(ttl)}">
       <img src="{thumb(v,'maxres')}" onerror="this.onerror=null;this.src='{thumb(v)}'" width="1280" height="720" alt="{esc(ttl)}">
       <span class="play big">{ICON['play']}</span>
     </button>
-    <noscript><a href="https://www.youtube.com/watch?v={v['id']}">YouTube पर देखें</a></noscript>
+    <noscript><a href="https://www.youtube.com/watch?v={v['id']}">Watch on YouTube</a></noscript>
   </div>
   <div class="cta-row center-row">
-    <a class="btn btn-red" href="https://www.youtube.com/watch?v={v['id']}" target="_blank" rel="noopener">{ICON['yt']}<span>YouTube पर देखें</span></a>
-    <a class="btn btn-ghost-d" href="{SUBSCRIBE}" target="_blank" rel="noopener">{ICON['bell']}<span>सब्सक्राइब करें</span></a>
+    <a class="btn btn-red" href="https://www.youtube.com/watch?v={v['id']}" target="_blank" rel="noopener">{ICON['yt']}<span>Watch on YouTube</span></a>
+    <a class="btn btn-ghost-d" href="{SUBSCRIBE}" target="_blank" rel="noopener">{ICON['bell']}<span>Subscribe</span></a>
   </div>
-  {f'<section class="panel"><h2>सारांश</h2>{sum_html}</section>' if sum_html else ''}
+  {f'<section class="panel"><h2>Summary</h2>{sum_html}</section>' if sum_html else ''}
   {chap_html}
   {bl_html}
+  {kw_html}
   {cr_html}
-  <section class="subscribe mini"><div><h2>हर सुबह की खबरें, सीधे फ़ोन पर</h2><p>YouTube पर {HANDLE} को सब्सक्राइब करें और घंटी दबाएँ।</p></div>
-    <a class="btn btn-white" href="{SUBSCRIBE}" target="_blank" rel="noopener">{ICON['yt']}<span>सब्सक्राइब करें</span></a></section>
+  <section class="subscribe mini"><div><h2>Get every morning's news on your phone</h2><p>Subscribe to {HANDLE} on YouTube and tap the bell.</p></div>
+    <a class="btn btn-white" href="{SUBSCRIBE}" target="_blank" rel="noopener">{ICON['yt']}<span>Subscribe</span></a></section>
 </div>
-<section class="sec k-blue"><div class="wrap"><div class="sec-head"><span class="sec-bar"></span><div><h2>और वीडियो देखें</h2></div><a class="more" href="/archive/">सभी देखें {ICON['arrow']}</a></div>
+<section class="sec k-blue"><div class="wrap"><div class="sec-head"><span class="sec-bar"></span><div><h2>More videos</h2></div><a class="more" href="/archive/">View all {ICON['arrow']}</a></div>
 <div class="grid">{rel_html}</div></div></section>
 </main>
 {footer()}"""
@@ -521,27 +553,221 @@ def build_watch(v, vids):
 
 
 def build_archive(vids):
-    chips = '<button class="fchip on" data-k="all">सभी</button>' + "".join(
+    chips = '<button class="fchip on" data-k="all">All</button>' + "".join(
         f'<button class="fchip {cls}" data-k="{k}">{lab}</button>' for k, (lab, cls, _) in KINDS.items())
     cards = "".join(card(v) for v in vids)
-    title = f"सभी वीडियो, आज की ताज़ा खबर आर्काइव | {NAME}"
-    desc = f"{NAME} के सभी बुलेटिन, 100 ख़बरें, पूरी कहानी और शॉर्ट्स एक जगह। तारीख़ के हिसाब से पिछली खबरें देखें।"
+    title = f"All Videos: Daily Hindi News Bulletin Archive | {NAME}"
+    desc = f"Every {NAME} bulletin, 100 News video, full story and Short in one place. Browse past Hindi news by date."
     extra = ld({"@context": "https://schema.org", "@type": "CollectionPage", "name": title, "url": SITE + "/archive/",
-                "inLanguage": "hi", "isPartOf": {"@id": SITE + "/#site"}})
+                "inLanguage": "en", "isPartOf": {"@id": SITE + "/#site"}})
     body = f"""{header()}
 <main id="main" class="archive">
 <div class="wrap">
-  <h1>सभी वीडियो</h1>
-  <p class="lead-d">तारीख़ के हिसाब से हमारे सभी बुलेटिन और खास रिपोर्ट।</p>
-  <div class="filters" role="group" aria-label="वीडियो प्रकार">{chips}</div>
+  <h1>All videos</h1>
+  <p class="lead-d">Every bulletin and special report, by date.</p>
+  <div class="filters" role="group" aria-label="Video type">{chips}</div>
   <div class="grid" id="all">{cards}</div>
-  <p class="more-yt">और पुराने वीडियो के लिए <a href="{YT}/videos" target="_blank" rel="noopener">हमारा YouTube चैनल</a> देखें।</p>
+  <p class="more-yt">For older videos, visit <a href="{YT}/videos" target="_blank" rel="noopener">our YouTube channel</a>.</p>
 </div>
 </main>
 {footer()}"""
     d = ROOT / "archive"
     d.mkdir(exist_ok=True)
     (d / "index.html").write_text(head(title, desc, "/archive/", extra=extra) + body, encoding="utf8")
+
+
+# ------------------------------------------------------------- topics ---
+# Every public YouTube playlist on the channel becomes a "topic" on the site
+# (Gold & Silver Rates, Share Market, International, ... and any future
+# Finance / Lifestyle / etc.). Nothing here is hard-coded per topic: a new
+# playlist on the channel appears on the next scheduled build.
+PL_FILE = ROOT / "data" / "playlists.json"
+PLAYLISTS: list[dict] = []
+PALETTE = 8
+
+
+def _get(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (dailybharat10.com site build)",
+                                               "Accept-Language": "en"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return r.read()
+
+
+def discover_playlist_ids():
+    """Public playlist ids from the channel's Playlists tab (order preserved)."""
+    page = _get(YT + "/playlists").decode("utf8", "replace")
+    return list(dict.fromkeys(re.findall(r'"contentId":"(PL[\w-]+)"', page)))
+
+
+def fetch_playlist(pid):
+    root = ET.fromstring(_get(f"https://www.youtube.com/feeds/videos.xml?playlist_id={pid}"))
+    ns = {"a": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015",
+          "m": "http://search.yahoo.com/mrss/"}
+    vids = []
+    for e in root.findall("a:entry", ns):
+        vids.append({"id": e.find("yt:videoId", ns).text, "title": e.find("a:title", ns).text or "",
+                     "published": e.find("a:published", ns).text,
+                     "desc": e.find("m:group/m:description", ns).text or ""})
+    return root.find("a:title", ns).text or pid, vids
+
+
+def sync_playlists(vids):
+    """Refresh playlists (stored list + newly discovered), fold their videos into `vids`."""
+    stored = {}
+    if PL_FILE.exists():
+        stored = {p["id"]: p for p in json.loads(PL_FILE.read_text(encoding="utf8"))}
+    try:
+        ids = list(dict.fromkeys(discover_playlist_ids() + list(stored)))
+    except Exception as exc:  # layout change / offline: keep what we know
+        print("playlist discovery failed, using stored list:", exc, file=sys.stderr)
+        ids = list(stored)
+    out = []
+    for pid in ids:
+        p = stored.get(pid) or {"id": pid, "color": len(stored) % PALETTE, "video_ids": []}
+        try:
+            title, pv = fetch_playlist(pid)
+            p["title"] = title
+            for v in pv:
+                vids.setdefault(v["id"], v)
+            p["video_ids"] = list(dict.fromkeys([v["id"] for v in pv] + p.get("video_ids", [])))
+        except Exception as exc:
+            if "title" not in p:
+                print("skipping playlist", pid, exc, file=sys.stderr)
+                continue
+            print("playlist fetch failed, keeping stored data:", pid, exc, file=sys.stderr)
+        stored[pid] = p
+        out.append(p)
+    used = set()
+    for p in out:  # slugs are assigned once and never change afterwards
+        if not p.get("slug") or p["slug"] in used:
+            base = re.sub(r"[^a-z0-9]+", "-", pl_en(p).lower()).strip("-") or p["id"].lower()
+            slug, n = base, 2
+            while slug in used:
+                slug, n = f"{base}-{n}", n + 1
+            p["slug"] = slug
+        used.add(p["slug"])
+    PL_FILE.parent.mkdir(exist_ok=True)
+    PL_FILE.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf8")
+    return out
+
+
+def _segments(p):
+    return [x.strip() for x in p.get("title", "").split("|") if x.strip()]
+
+
+def pl_en(p):
+    segs = _segments(p)
+    return next((x for x in segs if re.search(r"[A-Za-z]", x)), segs[0] if segs else p.get("id", ""))
+
+
+def pl_hi(p):
+    return next((x for x in _segments(p) if re.search("[ऀ-ॿ]", x) and x != pl_en(p)), "")
+
+
+def pl_url(p):
+    return f"{SITE}/topics/{p['slug']}/"
+
+
+def pl_videos(p, vids):
+    byid = {v["id"]: v for v in vids}
+    return sorted((byid[i] for i in p["video_ids"] if i in byid), key=lambda v: v["published"], reverse=True)
+
+
+def topic_card(p, vids):
+    vs = pl_videos(p, vids)
+    if not vs:
+        return ""
+    hi_name = f'<span class="t-hi" lang="hi">{esc(pl_hi(p))}</span>' if pl_hi(p) else ""
+    return f"""<a class="tcard p-{p['color'] % PALETTE}" href="/topics/{p['slug']}/">
+  <span class="t-img"><img src="{thumb(vs[0])}" width="480" height="270" loading="lazy" decoding="async" alt="{esc(pl_en(p))}"><span class="t-count">{len(vs)} videos</span></span>
+  <span class="t-body"><strong>{esc(pl_en(p))}</strong>{hi_name}</span>
+</a>
+"""
+
+
+def build_topics(vids):
+    live = [p for p in PLAYLISTS if pl_videos(p, vids)]
+    cards = "".join(topic_card(p, vids) for p in live)
+    title = f"Topics: Gold Rates, Share Market, World News & More | {NAME}"
+    desc = f"Browse {NAME} by topic: " + ", ".join(pl_en(p) for p in live[:5]) + " and more. Hindi news videos on YouTube."
+    extra = ld({"@context": "https://schema.org", "@type": "CollectionPage", "name": title, "url": SITE + "/topics/",
+                "inLanguage": "en", "isPartOf": {"@id": SITE + "/#site"}})
+    body = f"""{header()}
+<main id="main" class="archive">
+<div class="wrap">
+  <h1>Browse by topic</h1>
+  <p class="lead-d">Every series on our YouTube channel in one place. New topics appear here automatically.</p>
+  <div class="tgrid">{cards}</div>
+</div>
+</main>
+{footer()}"""
+    d = ROOT / "topics"
+    d.mkdir(exist_ok=True)
+    (d / "index.html").write_text(head(title, desc, "/topics/", extra=extra) + body, encoding="utf8")
+    for p in live:
+        build_topic(p, vids)
+
+
+def build_topic(p, vids):
+    vs = pl_videos(p, vids)
+    name, hin = pl_en(p), pl_hi(p)
+    title = f"{name} | Hindi News Videos | {NAME}"
+    desc = f"{name}: watch the {len(vs)} latest videos in this {NAME} series. Latest: {clean_title(vs[0]['title'])}."[:300]
+    yt_pl = f"https://www.youtube.com/playlist?list={p['id']}"
+    extra = ld({"@context": "https://schema.org", "@graph": [
+        {"@type": "CollectionPage", "name": name, "url": pl_url(p), "description": desc, "inLanguage": "en",
+         "isPartOf": {"@id": SITE + "/#site"}, "publisher": {"@id": SITE + "/#org"}},
+        {"@type": "ItemList", "itemListElement": [
+            {"@type": "ListItem", "position": i + 1, "url": watch_url(v), "name": clean_title(v["title"])}
+            for i, v in enumerate(vs[:20])]},
+        {"@type": "BreadcrumbList", "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Home", "item": SITE + "/"},
+            {"@type": "ListItem", "position": 2, "name": "Topics", "item": SITE + "/topics/"},
+            {"@type": "ListItem", "position": 3, "name": name, "item": pl_url(p)}]}]})
+    cards = "".join(card(v) for v in vs)
+    body = f"""{header()}
+<main id="main" class="archive">
+<div class="wrap">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/topics/">Topics</a> / <span>{esc(name)}</span></nav>
+  <div class="topic-head p-{p['color'] % PALETTE}">
+    <h1>{esc(name)}</h1>
+    {f'<p class="t-hi-h" lang="hi">{esc(hin)}</p>' if hin else ''}
+    <p>{len(vs)} videos from {NAME}. Watch the full series on YouTube and subscribe to get each new episode.</p>
+    <div class="cta-row">
+      <a class="btn btn-white" href="{yt_pl}" target="_blank" rel="noopener">{ICON['yt']}<span>Open playlist on YouTube</span></a>
+      <a class="btn btn-outline" href="{SUBSCRIBE}" target="_blank" rel="noopener">{ICON['bell']}<span>Subscribe</span></a>
+    </div>
+  </div>
+  <div class="grid">{cards}</div>
+</div>
+</main>
+{footer()}"""
+    d = ROOT / "topics" / p["slug"]
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "index.html").write_text(head(title, desc, f"/topics/{p['slug']}/", extra=extra) + body, encoding="utf8")
+
+
+def topics_section(vids):
+    live = [p for p in PLAYLISTS if pl_videos(p, vids)]
+    if not live:
+        return ""
+    cards = "".join(topic_card(p, vids) for p in live[:8])
+    return f"""<section class="sec k-teal" id="topics">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-bar"></span><div><h2>Browse by Topic</h2><p>Gold and silver rates, share market, world news, weather and more. Pick a series.</p></div>
+      <a class="more" href="/topics/">All topics {ICON['arrow']}</a></div>
+    <div class="tgrid">{cards}</div>
+  </div>
+</section>
+"""
+
+
+def topic_chips(v, vids):
+    ps = [p for p in PLAYLISTS if v["id"] in p["video_ids"]]
+    if not ps:
+        return ""
+    chips = " ".join(f'<a class="tchip p-{p["color"] % PALETTE}" href="/topics/{p["slug"]}/">{esc(pl_en(p))}</a>' for p in ps)
+    return f'<p class="tchips"><span>Series:</span> {chips}</p>'
 
 
 def build_legal():
@@ -559,7 +785,8 @@ def build_legal():
 
 
 def build_misc(vids):
-    urls = [(SITE + "/", vids[0]["published"], None), (SITE + "/archive/", vids[0]["published"], None),
+    urls = [(SITE + "/", vids[0]["published"], None), (SITE + "/archive/", vids[0]["published"], None), (SITE + "/topics/", vids[0]["published"], None),
+            *[(pl_url(p), None, None) for p in PLAYLISTS if pl_videos(p, vids)],
             (SITE + "/privacy-policy.html", None, None), (SITE + "/terms.html", None, None)]
     xml = ['<?xml version="1.0" encoding="UTF-8"?>',
            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">']
@@ -584,12 +811,12 @@ def build_misc(vids):
         "icons": [{"src": "/assets/img/favicon-192.png", "sizes": "192x192", "type": "image/png"},
                   {"src": "/assets/img/icon-512.png", "sizes": "512x512", "type": "image/png"}]}, ensure_ascii=False), encoding="utf8")
     body = f"""{header()}
-<main id="main" class="legal"><div class="wrap narrow2 nf"><h1>यह पेज नहीं मिला</h1>
-<p>आप जो खोज रहे थे वह यहाँ नहीं है। ताज़ा खबरों के लिए होम पेज पर जाएँ या हमारा YouTube चैनल देखें।</p>
-<div class="cta-row"><a class="btn btn-red" href="/">होम पेज</a><a class="btn btn-ghost-d" href="{YT}" target="_blank" rel="noopener">YouTube चैनल</a></div></div></main>
+<main id="main" class="legal"><div class="wrap narrow2 nf"><h1>Page not found</h1>
+<p>The page you were looking for is not here. Go to the home page for the latest news, or visit our YouTube channel.</p>
+<div class="cta-row"><a class="btn btn-red" href="/">Home page</a><a class="btn btn-ghost-d" href="{YT}" target="_blank" rel="noopener">YouTube channel</a></div></div></main>
 {footer()}"""
     (ROOT / "404.html").write_text(
-        head(f"पेज नहीं मिला | {NAME}", "यह पेज नहीं मिला।", "/404.html").replace('index,follow', 'noindex') + body, encoding="utf8")
+        head(f"Page not found | {NAME}", "Page not found.", "/404.html").replace('index,follow', 'noindex') + body, encoding="utf8")
 
 
 def main():
@@ -600,6 +827,7 @@ def main():
     for v in vids:
         build_watch(v, vids)
     build_archive(vids)
+    build_topics(vids)
     build_legal()
     build_misc(vids)
     print(f"built {len(vids)} videos")

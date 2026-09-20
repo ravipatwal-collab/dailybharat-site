@@ -2,6 +2,7 @@
 
 Static site for the Daily Bharat News YouTube channel (@dailybharat10), served by GitHub Pages.
 
+- Every public YouTube playlist becomes a Topic page under `/topics/` automatically (new Finance, Lifestyle, etc. playlists appear on the next build).
 - `build.py` reads the channel's public YouTube RSS feed, keeps every video seen in `data/videos.json`,
   and generates `index.html`, `news/<id>/`, `archive/`, `privacy-policy.html`, `terms.html`, `sitemap.xml`, `robots.txt`.
 - `.github/workflows/update.yml` re-runs it every 2 hours and commits only when something changed.
