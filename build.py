@@ -190,6 +190,30 @@ def autolink(text):
     return re.sub(r"(https?://[^\s<]+)", r'<a href="\1" rel="nofollow noopener" target="_blank">\1</a>', esc(text))
 
 
+# ------------------------------------------------------- translations ---
+# data/translations.json maps video id -> English title/summary/chapters/bullets/
+# keywords. Written by translate.py; a video without an entry falls back to its
+# original Hindi text (tagged lang="hi") so nothing is ever blank.
+TR_FILE = ROOT / "data" / "translations.json"
+TR = json.loads(TR_FILE.read_text(encoding="utf8")) if TR_FILE.exists() else {}
+
+
+def vt(v):
+    return (TR.get(v["id"], {}).get("title") or "").strip() or clean_title(v["title"])
+
+
+def vl(v):
+    return "" if (TR.get(v["id"], {}).get("title") or "").strip() else ' lang="hi"'
+
+
+def tr_list(v, key, orig):
+    """(items, lang_attr): the English list if it matches the original's length, else the original."""
+    t = TR.get(v["id"], {}).get(key)
+    if t and len(t) == len(orig) and all(str(x).strip() for x in t):
+        return list(t), ""
+    return list(orig), ' lang="hi"'
+
+
 # -------------------------------------------------------------- layout ---
 NAV = [("/", "Home"), ("/#bulletin", "Daily Bulletin"), ("/#hundred", "100 News"),
        ("/topics/", "Topics"), ("/archive/", "All Videos"), ("/#about", "About")]
@@ -274,7 +298,7 @@ def ticker(vids):
     items = [v for v in vids if v["kind"] in ("bulletin", "hundred", "story")][:8]
     if not items:
         return ""
-    row = "".join(f'<a href="/news/{v["id"]}/" lang="hi">{esc(clean_title(v["title"]))}</a>' for v in items)
+    row = "".join(f'<a href="/news/{v["id"]}/"{vl(v)}>{esc(vt(v))}</a>' for v in items)
     return f"""<div class="ticker" role="region" aria-label="Latest videos">
   <span class="ticker-tag">LATEST</span>
   <div class="ticker-track"><div class="ticker-move">{row}{row}</div></div>
@@ -320,12 +344,12 @@ def card(v, size="", show_kind=True):
     label, cls, _ = KINDS[v["kind"]]
     badge = f'<span class="badge {cls}">{label}</span>' if show_kind else ""
     return f"""<article class="card {size} {'is-short' if v['kind']=='short' else ''}" data-kind="{v['kind']}">
-  <a class="thumb" href="/news/{v['id']}/" aria-label="{esc(clean_title(v['title']))}">
-    <img src="{thumb(v)}" width="480" height="270" loading="lazy" decoding="async" alt="{esc(clean_title(v['title']))}">
+  <a class="thumb" href="/news/{v['id']}/" aria-label="{esc(vt(v))}">
+    <img src="{thumb(v)}" width="480" height="270" loading="lazy" decoding="async" alt="{esc(vt(v))}">
     <span class="play">{ICON['play']}</span>{badge}
   </a>
   <div class="card-body">
-    <h3><a href="/news/{v['id']}/" lang="hi">{esc(clean_title(v['title']))}</a></h3>
+    <h3><a href="/news/{v['id']}/"{vl(v)}>{esc(vt(v))}</a></h3>
     <time datetime="{v['published']}">{hi_date(v['published'])}</time>
   </div>
 </article>
@@ -377,7 +401,7 @@ def build_home(vids):
         {"@type": "WebPage", "@id": SITE + "/#page", "url": SITE + "/", "name": title, "description": desc, "inLanguage": "en",
          "isPartOf": {"@id": SITE + "/#site"}, "about": {"@id": SITE + "/#org"}},
         {"@type": "ItemList", "name": "Latest videos", "itemListElement": [
-            {"@type": "ListItem", "position": i + 1, "url": watch_url(v), "name": clean_title(v["title"])}
+            {"@type": "ListItem", "position": i + 1, "url": watch_url(v), "name": vt(v)}
             for i, v in enumerate(items)]},
         {"@type": "FAQPage", "mainEntity": [
             {"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in FAQ]},
@@ -394,8 +418,8 @@ def build_home(vids):
         f'<div class="why {c}"><span class="why-ic">{ICON[i]}</span><h3>{t}</h3><p>{p}</p></div>' for i, c, t, p in why)
     hero_card = f"""<a class="feature" href="/news/{latest['id']}/">
       <span class="feature-tag">Latest bulletin</span>
-      <span class="feature-img"><img src="{thumb(latest,'maxres')}" onerror="this.onerror=null;this.src='{thumb(latest)}'" width="1280" height="720" alt="{esc(clean_title(latest['title']))}" fetchpriority="high"><span class="play big">{ICON['play']}</span></span>
-      <span class="feature-body"><strong lang="hi">{esc(clean_title(latest['title']))}</strong><time datetime="{latest['published']}">{hi_date(latest['published'])}</time></span>
+      <span class="feature-img"><img src="{thumb(latest,'maxres')}" onerror="this.onerror=null;this.src='{thumb(latest)}'" width="1280" height="720" alt="{esc(vt(latest))}" fetchpriority="high"><span class="play big">{ICON['play']}</span></span>
+      <span class="feature-body"><strong{vl(latest)}>{esc(vt(latest))}</strong><time datetime="{latest['published']}">{hi_date(latest['published'])}</time></span>
     </a>"""
     body = f"""{header()}
 {ticker(vids)}
@@ -459,7 +483,7 @@ def build_home(vids):
 <section class="sec about" id="about">
   <div class="wrap narrow">
     <h2>About Daily Bharat News</h2>
-    <p><strong>{NAME}</strong> (<span lang="hi">डेली भारत न्यूज़</span>) is a Hindi news channel. Every morning we publish the day's main news from India and the world, in simple Hindi, as one bulletin on YouTube. News is drawn from government releases and leading newspapers.</p>
+    <p><strong>{NAME}</strong> is a Hindi news channel. Every morning we publish the day's main news from India and the world, in simple Hindi, as one bulletin on YouTube. News is drawn from government releases and leading newspapers.</p>
     <p class="fine">About this website: this is the official home page of the {NAME} channel. Our own publishing tool uses Google's YouTube APIs only to upload videos to our own channel and to read our own channel's analytics. It is used only by the channel owner, offers no public sign-in, and collects no data from visitors or viewers. See the <a href="/privacy-policy.html">Privacy Policy</a> and <a href="/terms.html">Terms of Service</a>. Contact: <a href="mailto:{EMAIL}">{EMAIL}</a>.</p>
   </div>
 </section>
@@ -470,9 +494,14 @@ def build_home(vids):
 
 def build_watch(v, vids):
     label, cls, _ = KINDS[v["kind"]]
-    ttl = clean_title(v["title"])
+    ttl = vt(v)
     chapters, paras, bullets, credits = parse_desc(v["desc"])
     tags, kwlines = seo_parts(v["desc"])
+    chap_names, chap_lang = tr_list(v, "chapters", [n for _, n in chapters])
+    paras3, para_lang = tr_list(v, "summary", paras[:3])
+    bullets_e, bul_lang = tr_list(v, "bullets", bullets[:120])
+    kw_e, kw_lang = tr_list(v, "keywords", kwlines)
+    paras = paras3 + paras[3:]
     phrases = [p.strip() for ln in kwlines for p in ln.split("|")[-1].split(",") if p.strip()]
     summary = paras[0] if paras else ""
     dline = hi_date(v["published"])
@@ -495,22 +524,34 @@ def build_watch(v, vids):
     chap_html = ""
     if chapters:
         rows = "".join(
-            f'<li><a href="https://www.youtube.com/watch?v={v["id"]}&amp;t={ts_seconds(t)}s" target="_blank" rel="noopener"><b>{t}</b> {hi(n)}</a></li>'
-            for t, n in chapters)
+            f'<li><a href="https://www.youtube.com/watch?v={v["id"]}&amp;t={ts_seconds(t)}s" target="_blank" rel="noopener"><b>{t}</b> <span{chap_lang}>{esc(n)}</span></a></li>'
+            for (t, _), n in zip(chapters, chap_names))
         chap_html = f'<section class="panel"><h2>What is in this video</h2><ol class="chapters">{rows}</ol></section>'
-    sum_html = "".join(f'<p lang="hi">{esc(p)}</p>' for p in paras[:3])
+    sum_html = "".join(f'<p{para_lang}>{esc(p)}</p>' for p in paras3)
     bl_html = ""
     if bullets:
         bl_html = ('<section class="panel"><h2>Headlines covered</h2><ul class="heads">'
-                   + "".join(f'<li lang="hi">{esc(b)}</li>' for b in bullets[:120]) + "</ul></section>")
+                   + "".join(f'<li{bul_lang}>{esc(b)}</li>' for b in bullets_e) + "</ul></section>")
     cr_html = ""
+    en_credits = []
+    for c in credits:  # credit lines are bilingual "Hindi / English": keep the English half
+        if " / " not in c and re.search("[ऀ-ॿ]", c):
+            continue  # a Hindi/English keyword line, not a credit
+        english = [p.strip() for p in c.split(" / ") if re.search(r"[A-Za-z]", p)]
+        if english:
+            line = re.sub(r"\s*\([^)]*[ऀ-ॿ][^)]*\)", "", english[-1]).strip()
+            if line:
+                en_credits.append(line)
+    if not any(("http" in c or "AI-generated" in c) for c in en_credits):
+        en_credits = []
+    credits = en_credits
     if credits:
         cr_html = '<section class="panel credits"><h2>Image credits</h2>' + "".join(f"<p>{autolink(c)}</p>" for c in credits) + "</section>"
     kw_html = ""
-    if kwlines or tags:
+    if kwlines or any(re.fullmatch(r"#[A-Za-z0-9_]+", t) for t in tags):
         kw_html = ('<section class="panel seo"><h2>Video keywords and tags</h2>'
-                   + "".join(f'<p lang="hi">{esc(k)}</p>' for k in kwlines)
-                   + ('<p class="tags">' + " ".join(f'<span lang="hi">{esc(t)}</span>' for t in tags) + "</p>" if tags else "")
+                   + "".join(f'<p{kw_lang}>{esc(k)}</p>' for k in kw_e)
+                   + ('<p class="tags">' + " ".join(f'<span>{esc(t)}</span>' for t in tags if re.fullmatch(r"#[A-Za-z0-9_]+", t)) + "</p>" if tags else "")
                    + "</section>")
     related = [x for x in vids if x["id"] != v["id"] and x["kind"] != "short"][:6]
     rel_html = "".join(card(x) for x in related)
@@ -519,7 +560,7 @@ def build_watch(v, vids):
 <div class="wrap narrow2">
   <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/archive/">Videos</a> / <span>{label}</span></nav>
   <span class="badge {cls}">{label}</span>
-  <h1 lang="hi">{esc(ttl)}</h1>
+  <h1{vl(v)}>{esc(ttl)}</h1>
   <p class="meta"><time datetime="{v['published']}">{dline}</time> &middot; {label} &middot; Hindi news by {NAME}</p>
   {topic_chips(v, vids)}
   <div class="player {'player-short' if v['kind']=='short' else ''}" data-id="{v['id']}">
@@ -677,7 +718,7 @@ def topic_card(p, vids):
     vs = pl_videos(p, vids)
     if not vs:
         return ""
-    hi_name = f'<span class="t-hi" lang="hi">{esc(pl_hi(p))}</span>' if pl_hi(p) else ""
+    hi_name = ""
     return f"""<a class="tcard p-{p['color'] % PALETTE}" href="/topics/{p['slug']}/">
   <span class="t-img"><img src="{thumb(vs[0])}" width="480" height="270" loading="lazy" decoding="async" alt="{esc(pl_en(p))}"><span class="t-count">{len(vs)} videos</span></span>
   <span class="t-body"><strong>{esc(pl_en(p))}</strong>{hi_name}</span>
@@ -712,13 +753,13 @@ def build_topic(p, vids):
     vs = pl_videos(p, vids)
     name, hin = pl_en(p), pl_hi(p)
     title = f"{name} | Hindi News Videos | {NAME}"
-    desc = f"{name}: watch the {len(vs)} latest videos in this {NAME} series. Latest: {clean_title(vs[0]['title'])}."[:300]
+    desc = f"{name}: watch the {len(vs)} latest videos in this {NAME} series. Latest: {vt(vs[0])}."[:300]
     yt_pl = f"https://www.youtube.com/playlist?list={p['id']}"
     extra = ld({"@context": "https://schema.org", "@graph": [
         {"@type": "CollectionPage", "name": name, "url": pl_url(p), "description": desc, "inLanguage": "en",
          "isPartOf": {"@id": SITE + "/#site"}, "publisher": {"@id": SITE + "/#org"}},
         {"@type": "ItemList", "itemListElement": [
-            {"@type": "ListItem", "position": i + 1, "url": watch_url(v), "name": clean_title(v["title"])}
+            {"@type": "ListItem", "position": i + 1, "url": watch_url(v), "name": vt(v)}
             for i, v in enumerate(vs[:20])]},
         {"@type": "BreadcrumbList", "itemListElement": [
             {"@type": "ListItem", "position": 1, "name": "Home", "item": SITE + "/"},
@@ -731,7 +772,6 @@ def build_topic(p, vids):
   <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/topics/">Topics</a> / <span>{esc(name)}</span></nav>
   <div class="topic-head p-{p['color'] % PALETTE}">
     <h1>{esc(name)}</h1>
-    {f'<p class="t-hi-h" lang="hi">{esc(hin)}</p>' if hin else ''}
     <p>{len(vs)} videos from {NAME}. Watch the full series on YouTube and subscribe to get each new episode.</p>
     <div class="cta-row">
       <a class="btn btn-white" href="{yt_pl}" target="_blank" rel="noopener">{ICON['yt']}<span>Open playlist on YouTube</span></a>
@@ -793,8 +833,9 @@ def build_misc(vids):
     for u, lm, _ in urls:
         xml.append(f"<url><loc>{u}</loc>" + (f"<lastmod>{lm[:10]}</lastmod>" if lm else "") + "</url>")
     for v in vids:
-        ttl = clean_title(v["title"])
+        ttl = vt(v)
         _, paras, _, _ = parse_desc(v["desc"])
+        paras = tr_list(v, "summary", paras[:3])[0] + paras[3:]
         d = (paras[0] if paras else ttl)[:1500]
         xml.append(
             f"<url><loc>{watch_url(v)}</loc><lastmod>{v['published'][:10]}</lastmod><video:video>"

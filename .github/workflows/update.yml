@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: [build.py, "content/**", "assets/style.css", "assets/site.js"]
+    paths: [build.py, translate.py, "content/**", "assets/style.css", "assets/site.js"]
 permissions:
   contents: write
 concurrency:
@@ -20,6 +20,12 @@ jobs:
         with:
           python-version: "3.12"
       - name: Fetch latest videos and rebuild pages
+        run: python build.py
+      - name: Translate new videos to English (only if ANTHROPIC_API_KEY secret is set)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python translate.py
+      - name: Rebuild with translations
         run: python build.py
       - name: Commit if anything changed
         run: |
