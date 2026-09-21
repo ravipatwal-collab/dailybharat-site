@@ -344,10 +344,13 @@ def card(v, size="", show_kind=True):
     label, cls, _ = KINDS[v["kind"]]
     badge = f'<span class="badge {cls}">{label}</span>' if show_kind else ""
     return f"""<article class="card {size} {'is-short' if v['kind']=='short' else ''}" data-kind="{v['kind']}">
-  <a class="thumb" href="/news/{v['id']}/" aria-label="{esc(vt(v))}">
-    <img src="{thumb(v)}" width="480" height="270" loading="lazy" decoding="async" alt="{esc(vt(v))}">
-    <span class="play">{ICON['play']}</span>{badge}
-  </a>
+  <div class="thumb" data-id="{v['id']}" data-subscribe="1">
+    <button class="player-btn" type="button" aria-label="Play video: {esc(vt(v))}">
+      <img src="{thumb(v)}" width="480" height="270" loading="lazy" decoding="async" alt="{esc(vt(v))}">
+      <span class="play">{ICON['play']}</span>{badge}
+    </button>
+    <noscript><a href="https://www.youtube.com/watch?v={v['id']}">Watch on YouTube</a></noscript>
+  </div>
   <div class="card-body">
     <h3><a href="/news/{v['id']}/"{vl(v)}>{esc(vt(v))}</a></h3>
     <time datetime="{v['published']}">{hi_date(v['published'])}</time>
@@ -569,7 +572,7 @@ def build_watch(v, vids):
   <h1{vl(v)}>{esc(ttl)}</h1>
   <p class="meta"><time datetime="{v['published']}">{dline}</time> &middot; {label} &middot; Hindi news by {NAME}</p>
   {topic_chips(v, vids)}
-  <div class="player {'player-short' if v['kind']=='short' else ''}" data-id="{v['id']}">
+  <div class="player {'player-short' if v['kind']=='short' else ''}" data-id="{v['id']}" data-subscribe="1">
     <button class="player-btn" type="button" aria-label="Play video: {esc(ttl)}">
       <img src="{thumb(v,'maxres')}" onerror="this.onerror=null;this.src='{thumb(v)}'" width="1280" height="720" alt="{esc(ttl)}">
       <span class="play big">{ICON['play']}</span>

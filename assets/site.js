@@ -7,11 +7,13 @@
     });
     nav.addEventListener('click', function (e) { if (e.target.tagName === 'A') nav.classList.remove('open'); });
   }
-  // Click-to-load YouTube player (privacy-enhanced domain, nothing loads until the click).
-  var p = document.querySelector('.player');
-  if (p) {
+  // Click-to-load YouTube player(s) (privacy-enhanced domain, nothing loads until the click).
+  // Every video card on the site uses this, not just the homepage hero: the big
+  // ".player" (hero, watch page) and every grid card's ".thumb[data-id]" alike.
+  document.querySelectorAll('.player, .thumb[data-id]').forEach(function (p) {
     var b = p.querySelector('.player-btn');
-    if (b) b.addEventListener('click', function () {
+    if (!b) return;
+    b.addEventListener('click', function () {
       var f = document.createElement('iframe');
       f.src = 'https://www.youtube-nocookie.com/embed/' + p.dataset.id + '?autoplay=1&rel=0&modestbranding=1';
       f.title = 'YouTube video player';
@@ -22,11 +24,18 @@
       // YouTube has no API to subscribe a visitor without their own click; opening
       // the official subscribe-confirmation page in a new tab (still their click to
       // confirm) is the closest legitimate equivalent to "play also subscribes".
+      // Capped to once per browsing session so playing several videos in a row
+      // doesn't stack up multiple tabs.
       if (p.dataset.subscribe) {
-        try { window.open('https://www.youtube.com/@dailybharat10?sub_confirmation=1', '_blank', 'noopener'); } catch (e) {}
+        var alreadyPrompted = true;
+        try { alreadyPrompted = sessionStorage.getItem('dbSubPrompted') === '1'; } catch (e) {}
+        if (!alreadyPrompted) {
+          try { sessionStorage.setItem('dbSubPrompted', '1'); } catch (e) {}
+          try { window.open('https://www.youtube.com/@dailybharat10?sub_confirmation=1', '_blank', 'noopener'); } catch (e) {}
+        }
       }
     });
-  }
+  });
   // Archive filters
   var chips = document.querySelectorAll('.fchip');
   if (chips.length) {
