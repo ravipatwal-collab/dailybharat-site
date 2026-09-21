@@ -19,6 +19,12 @@
       f.allowFullscreen = true;
       f.referrerPolicy = 'strict-origin-when-cross-origin';
       p.replaceChildren(f);
+      // YouTube has no API to subscribe a visitor without their own click; opening
+      // the official subscribe-confirmation page in a new tab (still their click to
+      // confirm) is the closest legitimate equivalent to "play also subscribes".
+      if (p.dataset.subscribe) {
+        try { window.open('https://www.youtube.com/@dailybharat10?sub_confirmation=1', '_blank', 'noopener'); } catch (e) {}
+      }
     });
   }
   // Archive filters
