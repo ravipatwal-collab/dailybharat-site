@@ -287,7 +287,7 @@ def header(active_path=""):
   <div class="wrap bar">
     <a class="brand" href="/" aria-label="{NAME} - Home"><img src="/assets/img/logo-mark.webp" width="120" height="63" alt="Daily Bharat logo" fetchpriority="high"></a>
     <nav class="nav" id="nav" aria-label="Main menu">{links}</nav>
-    {yt_subscribe_widget(layout="default", count="hidden", cls="yt-sub-widget yt-sub-widget-bar")}
+    <a class="btn btn-red btn-sm" href="{SUBSCRIBE}" target="_blank" rel="noopener">{ICON['yt']}<span>Subscribe</span></a>
     <button class="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="nav">{ICON['menu']}</button>
   </div>
 </header>
