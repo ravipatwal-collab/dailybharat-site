@@ -21,16 +21,16 @@
       f.allowFullscreen = true;
       f.referrerPolicy = 'strict-origin-when-cross-origin';
       p.replaceChildren(f);
-      // YouTube has no API to subscribe a visitor without their own click; opening
-      // the official subscribe-confirmation page in a new tab (still their click to
-      // confirm) is the closest legitimate equivalent to "play also subscribes".
-      // Capped to once per browsing session so playing several videos in a row
-      // doesn't stack up multiple tabs.
+      // We can't tell whether this visitor is already subscribed (that's private,
+      // and only YouTube's own widget near the player can see it) so this only
+      // ever fires ONCE per device, the very first video they play on the site —
+      // remembered permanently (localStorage, not sessionStorage) so it doesn't
+      // come back on their next visit or their next video.
       if (p.dataset.subscribe) {
         var alreadyPrompted = true;
-        try { alreadyPrompted = sessionStorage.getItem('dbSubPrompted') === '1'; } catch (e) {}
+        try { alreadyPrompted = localStorage.getItem('dbSubPrompted') === '1'; } catch (e) {}
         if (!alreadyPrompted) {
-          try { sessionStorage.setItem('dbSubPrompted', '1'); } catch (e) {}
+          try { localStorage.setItem('dbSubPrompted', '1'); } catch (e) {}
           try { window.open('https://www.youtube.com/@dailybharat10?sub_confirmation=1', '_blank', 'noopener'); } catch (e) {}
         }
       }
