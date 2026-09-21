@@ -1,5 +1,15 @@
 [
  {
+  "id": "PLbd-TP1JqNe4",
+  "color": 0,
+  "video_ids": [
+   "KBHws9Yu254",
+   "qwD5c8eXh6k"
+  ],
+  "title": "करेंट अफेयर्स | Daily Current Affairs Hindi (UPSC SSC Bank Exams)",
+  "slug": "daily-current-affairs-hindi-upsc-ssc-bank-exams"
+ },
+ {
   "id": "PLXsNxnSMa1RE",
   "color": 0,
   "video_ids": [
@@ -39,7 +49,8 @@
    "a0wxiObkVKE",
    "Pt-rOzWwbww",
    "DOpwFOVIC7c",
-   "k1B05Sl4Eww"
+   "k1B05Sl4Eww",
+   "qwD5c8eXh6k"
   ],
   "title": "सोना चांदी का भाव आज का | Gold Silver Rate Today",
   "slug": "gold-silver-rate-today"
@@ -48,6 +59,7 @@
   "id": "PLO0eoDyu_EIc",
   "color": 3,
   "video_ids": [
+   "KBHws9Yu254",
    "lRiNGbaaFSk",
    "qrXKmBQcGZI",
    "GZZGUDdNeuc",
@@ -93,7 +105,8 @@
    "a0wxiObkVKE",
    "Pt-rOzWwbww",
    "DOpwFOVIC7c",
-   "k1B05Sl4Eww"
+   "k1B05Sl4Eww",
+   "qwD5c8eXh6k"
   ],
   "title": "दुनिया की खबरें | International News Hindi",
   "slug": "international-news-hindi"
@@ -104,7 +117,8 @@
   "video_ids": [
    "pYhjwfDrxg0",
    "6hz9I5rCnQA",
-   "k1B05Sl4Eww"
+   "k1B05Sl4Eww",
+   "qwD5c8eXh6k"
   ],
   "title": "मौसम की जानकारी | Weather Update Hindi",
   "slug": "weather-update-hindi"
@@ -113,6 +127,7 @@
   "id": "PLEcM4ELH08mU",
   "color": 7,
   "video_ids": [
+   "qwD5c8eXh6k",
    "k1B05Sl4Eww",
    "DOpwFOVIC7c",
    "Pt-rOzWwbww",
