@@ -294,6 +294,15 @@ def header(active_path=""):
 """
 
 
+def yt_subscribe_widget():
+    """YouTube's own subscribe button (Google-hosted): it already knows whether the
+    visitor is subscribed and shows "Subscribed" for them automatically, with no
+    detection logic of our own — that state is private and our JS can't read it."""
+    return (f'<div class="yt-sub-widget"><div class="g-ytsubscribe" data-channelid="{CHANNEL_ID}" '
+            f'data-layout="full" data-count="default"></div></div>'
+            f'<script src="https://apis.google.com/js/platform.js" async defer></script>')
+
+
 def ticker(vids):
     items = [v for v in vids if v["kind"] in ("bulletin", "hundred", "story")][:8]
     if not items:
@@ -429,6 +438,7 @@ def build_home(vids):
         <noscript><a href="https://www.youtube.com/watch?v={latest['id']}">Watch on YouTube</a></noscript>
       </div>
       <a class="feature-body" href="/news/{latest['id']}/"><strong{vl(latest)}>{esc(vt(latest))}</strong><time datetime="{latest['published']}">{hi_date(latest['published'])}</time></a>
+      {yt_subscribe_widget()}
     </div>"""
     body = f"""{header()}
 {ticker(vids)}
@@ -579,6 +589,7 @@ def build_watch(v, vids):
     </button>
     <noscript><a href="https://www.youtube.com/watch?v={v['id']}">Watch on YouTube</a></noscript>
   </div>
+  {yt_subscribe_widget()}
   <div class="cta-row center-row">
     <a class="btn btn-red" href="https://www.youtube.com/watch?v={v['id']}" target="_blank" rel="noopener">{ICON['yt']}<span>Watch on YouTube</span></a>
     <a class="btn btn-ghost-d" href="{SUBSCRIBE}" target="_blank" rel="noopener">{ICON['bell']}<span>Subscribe</span></a>
