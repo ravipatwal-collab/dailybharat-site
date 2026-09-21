@@ -1,0 +1,243 @@
+[
+ {
+  "state": "Andhra Pradesh",
+  "hi": "आंध्र प्रदेश",
+  "bodies": [
+   "APPSC"
+  ],
+  "regional": "కరెంట్ అఫైర్స్",
+  "language": "Telugu",
+  "lang_code": "te"
+ },
+ {
+  "state": "Assam",
+  "hi": "असम",
+  "bodies": [
+   "APSC"
+  ],
+  "regional": "সাম্প্ৰতিক ঘটনা",
+  "language": "Assamese",
+  "lang_code": "as"
+ },
+ {
+  "state": "Bihar",
+  "hi": "बिहार",
+  "bodies": [
+   "BPSC",
+   "BSSC",
+   "Bihar Police"
+  ],
+  "regional": null,
+  "language": null,
+  "lang_code": null
+ },
+ {
+  "state": "Chhattisgarh",
+  "hi": "छत्तीसगढ",
+  "bodies": [
+   "CGPSC",
+   "CG Vyapam"
+  ],
+  "regional": null,
+  "language": null,
+  "lang_code": null
+ },
+ {
+  "state": "Delhi",
+  "hi": "दिल्ली",
+  "bodies": [
+   "DSSSB",
+   "Delhi Police"
+  ],
+  "regional": null,
+  "language": null,
+  "lang_code": null
+ },
+ {
+  "state": "Gujarat",
+  "hi": "गुजरात",
+  "bodies": [
+   "GPSC",
+   "GSSSB"
+  ],
+  "regional": "કરંટ અફેર્સ",
+  "language": "Gujarati",
+  "lang_code": "gu"
+ },
+ {
+  "state": "Haryana",
+  "hi": "हरियाणा",
+  "bodies": [
+   "HPSC",
+   "HSSC CET"
+  ],
+  "regional": null,
+  "language": null,
+  "lang_code": null
+ },
+ {
+  "state": "Himachal Pradesh",
+  "hi": "हिमाचल प्रदेश",
+  "bodies": [
+   "HPPSC",
+   "HPRCA"
+  ],
+  "regional": null,
+  "language": null,
+  "lang_code": null
+ },
+ {
+  "state": "Jammu and Kashmir",
+  "hi": "जम्मू और कश्मीर",
+  "bodies": [
+   "JKPSC",
+   "JKSSB"
+  ],
+  "regional": null,
+  "language": null,
+  "lang_code": null
+ },
+ {
+  "state": "Jharkhand",
+  "hi": "झारखंड",
+  "bodies": [
+   "JPSC",
+   "JSSC"
+  ],
+  "regional": null,
+  "language": null,
+  "lang_code": null
+ },
+ {
+  "state": "Karnataka",
+  "hi": "कर्नाटक",
+  "bodies": [
+   "KPSC",
+   "KAS"
+  ],
+  "regional": "ಪ್ರಚಲಿತ ಘಟನೆಗಳು",
+  "language": "Kannada",
+  "lang_code": "kn"
+ },
+ {
+  "state": "Kerala",
+  "hi": "केरल",
+  "bodies": [
+   "Kerala PSC"
+  ],
+  "regional": "കറന്റ് അഫയേഴ്സ്",
+  "language": "Malayalam",
+  "lang_code": "ml"
+ },
+ {
+  "state": "Madhya Pradesh",
+  "hi": "मध्य प्रदेश",
+  "bodies": [
+   "MPPSC",
+   "MPESB",
+   "MP Police"
+  ],
+  "regional": null,
+  "language": null,
+  "lang_code": null
+ },
+ {
+  "state": "Maharashtra",
+  "hi": "महाराष्ट्र",
+  "bodies": [
+   "MPSC"
+  ],
+  "regional": "चालू घडामोडी",
+  "language": "Marathi",
+  "lang_code": "mr"
+ },
+ {
+  "state": "Odisha",
+  "hi": "ओडिशा",
+  "bodies": [
+   "OPSC",
+   "OSSC"
+  ],
+  "regional": "ସାମ୍ପ୍ରତିକ ଘଟଣା",
+  "language": "Odia",
+  "lang_code": "or"
+ },
+ {
+  "state": "Punjab",
+  "hi": "पंजाब",
+  "bodies": [
+   "PPSC",
+   "PSSSB"
+  ],
+  "regional": "ਕਰੰਟ ਅਫੇਅਰਜ਼",
+  "language": "Punjabi",
+  "lang_code": "pa"
+ },
+ {
+  "state": "Rajasthan",
+  "hi": "राजस्थान",
+  "bodies": [
+   "RPSC",
+   "RSMSSB",
+   "Rajasthan Patwari"
+  ],
+  "regional": null,
+  "language": null,
+  "lang_code": null
+ },
+ {
+  "state": "Tamil Nadu",
+  "hi": "तमिलनाडु",
+  "bodies": [
+   "TNPSC"
+  ],
+  "regional": "நடப்பு நிகழ்வுகள்",
+  "language": "Tamil",
+  "lang_code": "ta"
+ },
+ {
+  "state": "Telangana",
+  "hi": "तेलंगाना",
+  "bodies": [
+   "TGPSC",
+   "TSPSC"
+  ],
+  "regional": "కరెంట్ అఫైర్స్",
+  "language": "Telugu",
+  "lang_code": "te"
+ },
+ {
+  "state": "Uttar Pradesh",
+  "hi": "उत्तर प्रदेश",
+  "bodies": [
+   "UPPSC",
+   "UPSSSC PET",
+   "UP Police"
+  ],
+  "regional": null,
+  "language": null,
+  "lang_code": null
+ },
+ {
+  "state": "Uttarakhand",
+  "hi": "उत्तराखंड",
+  "bodies": [
+   "UKPSC",
+   "UKSSSC"
+  ],
+  "regional": null,
+  "language": null,
+  "lang_code": null
+ },
+ {
+  "state": "West Bengal",
+  "hi": "पश्चिम बंगाल",
+  "bodies": [
+   "WBPSC",
+   "WBCS"
+  ],
+  "regional": "কারেন্ট অ্যাফেয়ার্স",
+  "language": "Bengali",
+  "lang_code": "bn"
+ }
+]

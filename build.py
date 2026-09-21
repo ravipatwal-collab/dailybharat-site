@@ -216,7 +216,7 @@ def tr_list(v, key, orig):
 
 # -------------------------------------------------------------- layout ---
 NAV = [("/", "Home"), ("/#bulletin", "Daily Bulletin"), ("/#hundred", "100 News"),
-       ("/topics/", "Topics"), ("/archive/", "All Videos"), ("/#about", "About")]
+       ("/current-affairs/", "Current Affairs"), ("/topics/", "Topics"), ("/archive/", "All Videos"), ("/#about", "About")]
 
 
 def hi(s):
@@ -334,6 +334,7 @@ def footer():
     </div>
     <div>
       <h3>Website</h3>
+      <a href="/current-affairs/">Daily current affairs</a>
       <a href="/topics/">Topics</a>
       <a href="/archive/">Video archive</a>
       <a href="/privacy-policy.html">Privacy Policy</a>
@@ -395,6 +396,8 @@ FAQ = [
      "From government releases (such as the Press Information Bureau) and leading Hindi and English newspapers. We do not cover party-versus-party attacks or communal disputes; the focus is on policies, schemes and facts."),
     ("What is '100 News in 10 Minutes'?",
      "After the main bulletin we publish a second, faster video with the rest of the day's roughly 100 headlines, so you can get the full picture of the day in 10 minutes."),
+    ("Can I use this for UPSC, SSC, bank or state exam current affairs?",
+     "Many aspirants watch it as a quick daily revision of what happened, because the bulletin covers government decisions, schemes, appointments, agreements and world news. It is a news bulletin, not a full exam-preparation course, so use it alongside your regular study material. See the Current Affairs page for how it is organised."),
     ("Do the videos use AI?",
      "Some videos use AI-generated symbolic images. Every such video says so clearly in its description, and real photographs are credited."),
     ("How do I make sure I never miss a video?",
@@ -831,6 +834,102 @@ def topic_chips(v, vids):
     return f'<p class="tchips"><span>Series:</span> {chips}</p>'
 
 
+# ------------------------------------------------- current affairs (exams) ---
+# Aimed at students preparing for government / defence / bank / UPSC / state
+# exams that carry a current-affairs paper. Honest by design: we are a daily
+# news bulletin, not an exam-prep course, and the page says so. The per-state
+# table comes from the channel's pipeline (data/exam_states.json, exported from
+# core/exam_relevance.py there); the regional-language phrases are search
+# keywords only, tagged with their own lang attribute.
+EXAM_FILE = ROOT / "data" / "exam_states.json"
+EXAM_STATES = json.loads(EXAM_FILE.read_text(encoding="utf8")) if EXAM_FILE.exists() else []
+
+EXAM_TOPICS = [
+    ("Government schemes and policies", "New schemes, eligibility, cabinet decisions and PIB releases."),
+    ("Appointments and oaths", "Who was appointed, elected or sworn in."),
+    ("Awards and honours", "National and international awards and recognitions."),
+    ("Summits and agreements", "Bilateral visits, MoUs and international meetings."),
+    ("Indices, reports and rankings", "Surveys, reports and where India stands."),
+    ("Defence and security", "Exercises, missile tests and defence deals."),
+    ("Science and technology", "Space missions, launches and new technology."),
+    ("Economy and markets", "RBI decisions, budget and GST updates, market movement."),
+    ("Sports", "Major results and tournaments."),
+]
+
+EXAM_FAQ = [
+    ("Is Daily Bharat News a complete current affairs course?",
+     "No. It is a daily Hindi news bulletin. We flag the exam-useful stories from the day's news, but we do not cover every story and we skip party-versus-party and communal disputes, so use it as quick daily revision next to your regular study material and official notifications."),
+    ("Which exams is this useful for?",
+     "Students preparing for UPSC, SSC CGL and CHSL, IBPS and SBI bank exams, RRB NTPC, NDA, CDS, CAPF, Agniveer, CUET and state exams such as State PSC, state police, patwari and teaching (TET/CTET) exams, wherever there is a general knowledge or current affairs paper."),
+    ("Is the daily current affairs in Hindi or English?",
+     "The videos are in simple Hindi. This website is in English so it is easy to find your way around."),
+    ("Where can I find today's current affairs?",
+     "Watch the latest Daily Bulletin (about 50 top stories) and the 100 News video (the rest of the day's headlines in 10 minutes) listed on this page. Each video's description also lists the exam-useful topics of the day, and a comment under each video recaps them."),
+    ("Do you have state-wise current affairs?",
+     "Every bulletin includes state news, and we group videos into state playlists on YouTube. The table below lists the main state exam bodies we tag against."),
+]
+
+
+def build_current_affairs(vids):
+    ca = [v for v in vids if v["kind"] in ("bulletin", "hundred")]
+    bull = [v for v in ca if v["kind"] == "bulletin"][:4]
+    hund = [v for v in ca if v["kind"] == "hundred"][:4]
+    topics = "".join(f"<li><strong>{esc(a)}</strong>: {esc(b)}</li>" for a, b in EXAM_TOPICS)
+    pls = [p for p in PLAYLISTS if "current affairs" in pl_en(p).lower() and pl_videos(p, vids)]
+    pl_cards = "".join(topic_card(p, vids) for p in pls)
+    rows = ""
+    for r in EXAM_STATES:
+        reg = (f'<span lang="{r["lang_code"]}">{esc(r["regional"])}</span> ({esc(r["language"])})'
+               if r.get("regional") and r.get("lang_code") else "&mdash;")
+        rows += (f'<tr><th scope="row">{esc(r["state"])}</th><td>{esc(", ".join(r["bodies"]))}</td>'
+                 f'<td>{hi(r["hi"] + " करेंट अफेयर्स")}</td><td>{reg}</td></tr>')
+    table = (f'<div class="tbl-wrap"><table class="ca-table"><thead><tr><th>State</th><th>Exam bodies</th>'
+             f'<th>In Hindi</th><th>In the state language</th></tr></thead><tbody>{rows}</tbody></table></div>'
+             if rows else "")
+    title = "Daily Current Affairs in Hindi for UPSC, SSC, Bank, Railway, Defence & State Exams | " + NAME
+    desc = ("Daily current affairs in Hindi from the day's news for UPSC, SSC CGL, IBPS, SBI, RRB NTPC, NDA, CDS, Agniveer and "
+            "State PSC aspirants: schemes, appointments, agreements, defence, economy and more. Watch the latest bulletin free.")
+    url = SITE + "/current-affairs/"
+    extra = ld({"@context": "https://schema.org", "@graph": [
+        {"@type": "CollectionPage", "name": title, "url": url, "description": desc, "inLanguage": "en",
+         "isPartOf": {"@id": SITE + "/#site"}, "publisher": {"@id": SITE + "/#org"}},
+        {"@type": "FAQPage", "mainEntity": [
+            {"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in EXAM_FAQ]},
+        {"@type": "BreadcrumbList", "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Home", "item": SITE + "/"},
+            {"@type": "ListItem", "position": 2, "name": "Current Affairs", "item": url}]}]})
+    faq = "".join(f"<details><summary>{esc(q)}</summary><p>{esc(a)}</p></details>" for q, a in EXAM_FAQ)
+
+    def block(heading, vs):
+        return (f'<h2>{heading}</h2><div class="grid">{"".join(card(v) for v in vs)}</div>' if vs else "")
+
+    body = f"""{header()}
+<main id="main" class="archive ca">
+<div class="wrap">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / <span>Current Affairs</span></nav>
+  <h1>Daily current affairs in Hindi</h1>
+  <p class="lead-d">For students preparing for UPSC, SSC, bank, railway, defence (NDA, CDS, CAPF, Agniveer) and state government exams.
+  Every day's news, with the exam-useful stories called out.</p>
+  <div class="cta-row"><a class="btn btn-red" href="{SUBSCRIBE}" target="_blank" rel="noopener">{ICON['bell']}<span>Subscribe for daily updates</span></a></div>
+  {block("Latest Daily Bulletin", bull)}
+  {block("Latest 100 News in 10 minutes", hund)}
+  <h2>What we flag as exam-useful</h2>
+  <p>We are a daily news bulletin, not a full exam-preparation course. Each day we list the categories below that today's stories genuinely fall in, in the video description and in a comment under the video.</p>
+  <ul class="ca-list">{topics}</ul>
+  {f'<h2>Current affairs playlists</h2><div class="tgrid">{pl_cards}</div>' if pl_cards else ""}
+  <h2>State exams</h2>
+  <p>Preparing for a state exam? State news is part of every bulletin, and state playlists are on our YouTube channel. Exam bodies we tag against:</p>
+  {table}
+  <h2>Frequently asked questions</h2>
+  <div class="faq">{faq}</div>
+</div>
+</main>
+{footer()}"""
+    d = ROOT / "current-affairs"
+    d.mkdir(exist_ok=True)
+    (d / "index.html").write_text(head(title, desc, "/current-affairs/", extra=extra) + body, encoding="utf8")
+
+
 def build_legal():
     pages = {
         "privacy-policy.html": ("Privacy Policy", (ROOT / "content" / "privacy.html").read_text(encoding="utf8")),
@@ -847,6 +946,7 @@ def build_legal():
 
 def build_misc(vids):
     urls = [(SITE + "/", vids[0]["published"], None), (SITE + "/archive/", vids[0]["published"], None), (SITE + "/topics/", vids[0]["published"], None),
+            (SITE + "/current-affairs/", vids[0]["published"], None),
             *[(pl_url(p), None, None) for p in PLAYLISTS if pl_videos(p, vids)],
             (SITE + "/privacy-policy.html", None, None), (SITE + "/terms.html", None, None)]
     xml = ['<?xml version="1.0" encoding="UTF-8"?>',
@@ -890,6 +990,7 @@ def main():
         build_watch(v, vids)
     build_archive(vids)
     build_topics(vids)
+    build_current_affairs(vids)
     build_legal()
     build_misc(vids)
     print(f"built {len(vids)} videos")
