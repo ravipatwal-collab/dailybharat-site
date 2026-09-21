@@ -416,11 +416,17 @@ def build_home(vids):
     ]
     why_html = "".join(
         f'<div class="why {c}"><span class="why-ic">{ICON[i]}</span><h3>{t}</h3><p>{p}</p></div>' for i, c, t, p in why)
-    hero_card = f"""<a class="feature" href="/news/{latest['id']}/">
+    hero_card = f"""<div class="feature">
       <span class="feature-tag">Latest bulletin</span>
-      <span class="feature-img"><img src="{thumb(latest,'maxres')}" onerror="this.onerror=null;this.src='{thumb(latest)}'" width="1280" height="720" alt="{esc(vt(latest))}" fetchpriority="high"><span class="play big">{ICON['play']}</span></span>
-      <span class="feature-body"><strong{vl(latest)}>{esc(vt(latest))}</strong><time datetime="{latest['published']}">{hi_date(latest['published'])}</time></span>
-    </a>"""
+      <div class="player feature-img" data-id="{latest['id']}" data-subscribe="1">
+        <button class="player-btn" type="button" aria-label="Play video: {esc(vt(latest))}">
+          <img src="{thumb(latest,'maxres')}" onerror="this.onerror=null;this.src='{thumb(latest)}'" width="1280" height="720" alt="{esc(vt(latest))}" fetchpriority="high">
+          <span class="play big">{ICON['play']}</span>
+        </button>
+        <noscript><a href="https://www.youtube.com/watch?v={latest['id']}">Watch on YouTube</a></noscript>
+      </div>
+      <a class="feature-body" href="/news/{latest['id']}/"><strong{vl(latest)}>{esc(vt(latest))}</strong><time datetime="{latest['published']}">{hi_date(latest['published'])}</time></a>
+    </div>"""
     body = f"""{header()}
 {ticker(vids)}
 <main id="main">
