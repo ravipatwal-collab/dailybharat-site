@@ -287,20 +287,22 @@ def header(active_path=""):
   <div class="wrap bar">
     <a class="brand" href="/" aria-label="{NAME} - Home"><img src="/assets/img/logo-mark.webp" width="120" height="63" alt="Daily Bharat logo" fetchpriority="high"></a>
     <nav class="nav" id="nav" aria-label="Main menu">{links}</nav>
-    <a class="btn btn-red btn-sm" href="{SUBSCRIBE}" target="_blank" rel="noopener">{ICON['yt']}<span>Subscribe</span></a>
+    {yt_subscribe_widget(layout="default", count="hidden", cls="yt-sub-widget yt-sub-widget-bar")}
     <button class="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="nav">{ICON['menu']}</button>
   </div>
 </header>
+<script src="https://apis.google.com/js/platform.js" async defer></script>
 """
 
 
-def yt_subscribe_widget():
+def yt_subscribe_widget(layout="full", count="default", cls="yt-sub-widget"):
     """YouTube's own subscribe button (Google-hosted): it already knows whether the
     visitor is subscribed and shows "Subscribed" for them automatically, with no
-    detection logic of our own — that state is private and our JS can't read it."""
-    return (f'<div class="yt-sub-widget"><div class="g-ytsubscribe" data-channelid="{CHANNEL_ID}" '
-            f'data-layout="full" data-count="default"></div></div>'
-            f'<script src="https://apis.google.com/js/platform.js" async defer></script>')
+    detection logic of our own — that state is private and our JS can't read it.
+    The loader script (apis.google.com/js/platform.js) is loaded once, in header()
+    since that runs on every page; callers here only need the button's own div."""
+    return (f'<div class="{cls}"><div class="g-ytsubscribe" data-channelid="{CHANNEL_ID}" '
+            f'data-layout="{layout}" data-count="{count}"></div></div>')
 
 
 def ticker(vids):
@@ -438,7 +440,6 @@ def build_home(vids):
         <noscript><a href="https://www.youtube.com/watch?v={latest['id']}">Watch on YouTube</a></noscript>
       </div>
       <a class="feature-body" href="/news/{latest['id']}/"><strong{vl(latest)}>{esc(vt(latest))}</strong><time datetime="{latest['published']}">{hi_date(latest['published'])}</time></a>
-      {yt_subscribe_widget()}
     </div>"""
     body = f"""{header()}
 {ticker(vids)}
