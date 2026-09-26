@@ -23,6 +23,8 @@ CHANNEL_ID = "UC3oT8ClEaeXBjrUdBrxYTrw"
 HANDLE = "@dailybharat10"
 YT = "https://www.youtube.com/@dailybharat10"
 SUBSCRIBE = YT + "?sub_confirmation=1"
+FACEBOOK = "https://www.facebook.com/dailybharat10/"   # the Page, not the personal profile
+INSTAGRAM = "https://www.instagram.com/dailybharat10/"
 FEED = f"https://www.youtube.com/feeds/videos.xml?channel_id={CHANNEL_ID}"
 NAME = "Daily Bharat News"
 EMAIL = "dailybharat10@gmail.com"
@@ -271,7 +273,7 @@ ORG = {
     "alternateName": ["Daily Bharat", "डेली भारत न्यूज़", HANDLE],
     "url": SITE + "/",
     "logo": {"@type": "ImageObject", "url": SITE + "/assets/img/icon-512.png", "width": 512, "height": 512},
-    "sameAs": [YT, f"https://www.youtube.com/channel/{CHANNEL_ID}"],
+    "sameAs": [YT, f"https://www.youtube.com/channel/{CHANNEL_ID}", FACEBOOK, INSTAGRAM],
     "email": EMAIL,
     "description": "A daily Hindi news bulletin on YouTube covering India and the world.",
     "ethicsPolicy": SITE + "/#about",
@@ -331,6 +333,11 @@ def footer():
       <a href="{SUBSCRIBE}" target="_blank" rel="noopener">Subscribe</a>
       <a href="{YT}/videos" target="_blank" rel="noopener">All videos on YouTube</a>
       <a href="{YT}/shorts" target="_blank" rel="noopener">Shorts</a>
+    </div>
+    <div>
+      <h3>Follow us</h3>
+      <a href="{FACEBOOK}" target="_blank" rel="noopener">Facebook Page</a>
+      <a href="{INSTAGRAM}" target="_blank" rel="noopener">Instagram {HANDLE}</a>
     </div>
     <div>
       <h3>Website</h3>
