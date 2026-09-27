@@ -83,6 +83,48 @@ def classify(v):
     return "story"
 
 
+# The RSS feed carries no length, and Google wants one (VideoObject.duration,
+# <video:duration>, the last key-moment Clip's endOffset). The public watch
+# page states it (itemprop="duration" / "lengthSeconds") with no API key.
+# Fetched once per video, stored in videos.json; a failure leaves it unset
+# and the pages simply omit it.
+MAX_DURATION_FETCHES = 60
+
+
+def fetch_duration(vid):
+    req = urllib.request.Request(f"https://www.youtube.com/watch?v={vid}",
+                                 headers={"User-Agent": "Mozilla/5.0 (dailybharat10.com site build)"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        page = r.read().decode("utf8", "replace")
+    m = re.search(r'"lengthSeconds":"(\d+)"', page)
+    if m:
+        return int(m.group(1))
+    m = re.search(r'itemprop="duration" content="PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?"', page)
+    if m and any(m.groups()):
+        h, mi, s = (int(x or 0) for x in m.groups())
+        return h * 3600 + mi * 60 + s
+    return None
+
+
+def fill_durations(vids):
+    todo = [v for v in sorted(vids.values(), key=lambda v: v["published"], reverse=True)
+            if not v.get("duration_sec")][:MAX_DURATION_FETCHES]
+    for v in todo:
+        try:
+            sec = fetch_duration(v["id"])
+        except Exception as exc:  # network/page change: leave it unset, retry next build
+            print("duration fetch failed for", v["id"], exc, file=sys.stderr)
+            continue
+        if sec:
+            v["duration_sec"] = sec
+
+
+def iso_duration(sec):
+    h, rest = divmod(int(sec), 3600)
+    m, s = divmod(rest, 60)
+    return "PT" + (f"{h}H" if h else "") + (f"{m}M" if m else "") + f"{s}S"
+
+
 def load_videos():
     vids = {}
     if DATA.exists():
@@ -90,9 +132,12 @@ def load_videos():
             vids[v["id"]] = v
     try:
         for v in fetch_feed():
-            vids[v["id"]] = v
+            # merge, never replace: the stored record carries fields the
+            # feed does not (duration_sec)
+            vids[v["id"]] = {**vids.get(v["id"], {}), **v}
     except Exception as exc:  # network down: build from what we already have
         print("feed fetch failed, using stored data:", exc, file=sys.stderr)
+    fill_durations(vids)
     global PLAYLISTS
     try:
         PLAYLISTS = sync_playlists(vids)
@@ -522,6 +567,39 @@ def build_home(vids):
     (ROOT / "index.html").write_text(head(title, desc, "/", extra=extra) + body, encoding="utf8")
 
 
+def key_moments(v, url, chapters, names):
+    """The VideoObject fields Google reads for "Key moments" in search.
+
+    * duration -- ISO 8601, when the length is known;
+    * hasPart -- one Clip per description chapter. Its url is THIS page with
+      ?t=<seconds>; assets/site.js starts the player there;
+    * potentialAction -- a SeekToAction naming the same ?t= pattern, so Google
+      can pick moments itself on a video with no chapters (Shorts excepted).
+    """
+    out = {}
+    dur = v.get("duration_sec")
+    if dur:
+        out["duration"] = iso_duration(dur)
+    starts = [ts_seconds(t) for t, _ in chapters]
+    if len(starts) >= 2 and starts == sorted(starts) and starts[0] == 0:
+        clips = []
+        for i, (s, name) in enumerate(zip(starts, names)):
+            end = starts[i + 1] if i + 1 < len(starts) else dur
+            if end is not None and end <= s:
+                continue
+            clip = {"@type": "Clip", "name": name, "startOffset": s, "url": f"{url}?t={s}"}
+            if end:
+                clip["endOffset"] = end
+            clips.append(clip)
+        if clips:
+            out["hasPart"] = clips
+    if v.get("kind") != "short":
+        out["potentialAction"] = {
+            "@type": "SeekToAction", "target": url + "?t={seek_to_second_number}",
+            "startOffset-input": "required name=seek_to_second_number"}
+    return out
+
+
 def build_watch(v, vids):
     label, cls, _ = KINDS[v["kind"]]
     ttl = vt(v)
@@ -546,6 +624,7 @@ def build_watch(v, vids):
         "isFamilyFriendly": True,
         "keywords": ", ".join(dict.fromkeys([t.lstrip("#") for t in tags] + phrases))[:500],
     }
+    video_ld.update(key_moments(v, url, chapters, chap_names))
     crumbs = {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
         {"@type": "ListItem", "position": 1, "name": "Home", "item": SITE + "/"},
         {"@type": "ListItem", "position": 2, "name": "Videos", "item": SITE + "/archive/"},
@@ -970,7 +1049,8 @@ def build_misc(vids):
             f"<video:thumbnail_loc>{thumb(v,'maxres')}</video:thumbnail_loc><video:title>{esc(ttl)[:100]}</video:title>"
             f"<video:description>{esc(d)}</video:description>"
             f"<video:player_loc>https://www.youtube.com/embed/{v['id']}</video:player_loc>"
-            f"<video:publication_date>{v['published']}</video:publication_date></video:video></url>")
+            + (f"<video:duration>{int(v['duration_sec'])}</video:duration>" if v.get("duration_sec") else "")
+            + f"<video:publication_date>{v['published']}</video:publication_date></video:video></url>")
     xml.append("</urlset>")
     (ROOT / "sitemap.xml").write_text("\n".join(xml), encoding="utf8")
     (ROOT / "robots.txt").write_text(f"User-agent: *\nAllow: /\n\nSitemap: {SITE}/sitemap.xml\n", encoding="utf8")

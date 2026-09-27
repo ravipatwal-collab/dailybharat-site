@@ -10,12 +10,18 @@
   // Click-to-load YouTube player(s) (privacy-enhanced domain, nothing loads until the click).
   // Every video card on the site uses this, not just the homepage hero: the big
   // ".player" (hero, watch page) and every grid card's ".thumb[data-id]" alike.
+  // A watch-page link with ?t=<seconds> (Google "Key moments", the page's
+  // Clip / SeekToAction structured data) opens the player at that second.
+  var seek = parseInt(new URLSearchParams(location.search).get('t'), 10);
+  if (!(seek > 0)) seek = 0;
   document.querySelectorAll('.player, .thumb[data-id]').forEach(function (p) {
     var b = p.querySelector('.player-btn');
     if (!b) return;
-    b.addEventListener('click', function () {
+    var isMain = p.classList.contains('player') && document.querySelector('main.watch');
+    b.addEventListener('click', function (ev) {
       var f = document.createElement('iframe');
-      f.src = 'https://www.youtube-nocookie.com/embed/' + p.dataset.id + '?autoplay=1&rel=0&modestbranding=1';
+      f.src = 'https://www.youtube-nocookie.com/embed/' + p.dataset.id + '?autoplay=1&rel=0&modestbranding=1'
+        + (isMain && seek ? '&start=' + seek : '');
       f.title = 'YouTube video player';
       f.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
       f.allowFullscreen = true;
@@ -26,7 +32,8 @@
       // ever fires ONCE per device, the very first video they play on the site —
       // remembered permanently (localStorage, not sessionStorage) so it doesn't
       // come back on their next visit or their next video.
-      if (p.dataset.subscribe) {
+      // (never for the automatic ?t= load below: no click, so a popup would be blocked anyway)
+      if (p.dataset.subscribe && ev.isTrusted) {
         var alreadyPrompted = true;
         try { alreadyPrompted = localStorage.getItem('dbSubPrompted') === '1'; } catch (e) {}
         if (!alreadyPrompted) {
@@ -35,6 +42,7 @@
         }
       }
     });
+    if (isMain && seek) b.click();
   });
   // Archive filters
   var chips = document.querySelectorAll('.fchip');
