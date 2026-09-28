@@ -1,5 +1,23 @@
 [
  {
+  "id": "PLbppLKAB3YJY",
+  "color": 1,
+  "video_ids": [
+   "toNa8lpuaYE"
+  ],
+  "title": "उत्तराखंड समाचार | Uttarakhand News Hindi",
+  "slug": "uttarakhand-news-hindi"
+ },
+ {
+  "id": "PLebJdW7eIkfQ",
+  "color": 2,
+  "video_ids": [
+   "z3KWVeYrgiU"
+  ],
+  "title": "पंजाब समाचार | Punjab News Hindi",
+  "slug": "punjab-news-hindi"
+ },
+ {
   "id": "PLbd-TP1JqNe4",
   "color": 0,
   "video_ids": [
@@ -15,7 +33,8 @@
    "Q776YRbE0PU",
    "BOH50WFC4X8",
    "bpSPW-sMRN0",
-   "nj2YffYJwwU"
+   "nj2YffYJwwU",
+   "hfr-uj4gE8c"
   ],
   "title": "करेंट अफेयर्स | Daily Current Affairs Hindi (UPSC SSC Bank Exams)",
   "slug": "daily-current-affairs-hindi-upsc-ssc-bank-exams"
@@ -37,6 +56,10 @@
   "id": "PLLywfg6K5S0w",
   "color": 1,
   "video_ids": [
+   "toNa8lpuaYE",
+   "z3KWVeYrgiU",
+   "DW9_HwFRJpw",
+   "wlZJjuRt0Uk",
    "xgatNCfDBSs",
    "g4eRCMGmBSY",
    "zH_2UaubOTk",
@@ -147,7 +170,9 @@
    "kXTRruXQ7ek",
    "fiHEWCgG-v4",
    "P4J59luj4mE",
-   "Q776YRbE0PU"
+   "Q776YRbE0PU",
+   "hfr-uj4gE8c",
+   "toNa8lpuaYE"
   ],
   "title": "मौसम की जानकारी | Weather Update Hindi",
   "slug": "weather-update-hindi"
@@ -156,6 +181,7 @@
   "id": "PLEcM4ELH08mU",
   "color": 7,
   "video_ids": [
+   "hfr-uj4gE8c",
    "bpSPW-sMRN0",
    "Q776YRbE0PU",
    "P4J59luj4mE",
