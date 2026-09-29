@@ -1,5 +1,15 @@
 [
  {
+  "id": "PLIJ7qDXeABgE",
+  "color": 3,
+  "video_ids": [
+   "1V9KyKBthNo",
+   "z3FuHheqzl0"
+  ],
+  "title": "दिल्ली समाचार | Delhi News Hindi",
+  "slug": "delhi-news-hindi"
+ },
+ {
   "id": "PLbppLKAB3YJY",
   "color": 1,
   "video_ids": [
@@ -34,7 +44,8 @@
    "BOH50WFC4X8",
    "bpSPW-sMRN0",
    "nj2YffYJwwU",
-   "hfr-uj4gE8c"
+   "hfr-uj4gE8c",
+   "2pUrjHZdmzM"
   ],
   "title": "करेंट अफेयर्स | Daily Current Affairs Hindi (UPSC SSC Bank Exams)",
   "slug": "daily-current-affairs-hindi-upsc-ssc-bank-exams"
@@ -56,6 +67,9 @@
   "id": "PLLywfg6K5S0w",
   "color": 1,
   "video_ids": [
+   "z3FuHheqzl0",
+   "1V9KyKBthNo",
+   "4M9o6_G75F0",
    "toNa8lpuaYE",
    "z3KWVeYrgiU",
    "DW9_HwFRJpw",
@@ -97,6 +111,7 @@
   "id": "PLO0eoDyu_EIc",
   "color": 3,
   "video_ids": [
+   "2pUrjHZdmzM",
    "nj2YffYJwwU",
    "BOH50WFC4X8",
    "Pir-T7UOOVU",
@@ -172,7 +187,8 @@
    "P4J59luj4mE",
    "Q776YRbE0PU",
    "hfr-uj4gE8c",
-   "toNa8lpuaYE"
+   "toNa8lpuaYE",
+   "4x0YyHe62d8"
   ],
   "title": "मौसम की जानकारी | Weather Update Hindi",
   "slug": "weather-update-hindi"
@@ -181,6 +197,7 @@
   "id": "PLEcM4ELH08mU",
   "color": 7,
   "video_ids": [
+   "4x0YyHe62d8",
    "hfr-uj4gE8c",
    "bpSPW-sMRN0",
    "Q776YRbE0PU",
