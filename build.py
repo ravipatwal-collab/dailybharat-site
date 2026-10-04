@@ -91,29 +91,46 @@ def classify(v):
 MAX_DURATION_FETCHES = 60
 
 
-def fetch_duration(vid):
-    req = urllib.request.Request(f"https://www.youtube.com/watch?v={vid}",
-                                 headers={"User-Agent": "Mozilla/5.0 (dailybharat10.com site build)"})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        page = r.read().decode("utf8", "replace")
-    m = re.search(r'"lengthSeconds":"(\d+)"', page)
-    if m:
-        return int(m.group(1))
-    m = re.search(r'itemprop="duration" content="PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?"', page)
-    if m and any(m.groups()):
-        h, mi, s = (int(x or 0) for x in m.groups())
-        return h * 3600 + mi * 60 + s
-    return None
+def fetch_duration(vid, delay_sec=0.5):
+    import time
+    import urllib.error
+
+    for attempt in range(3):
+        try:
+            time.sleep(delay_sec)  # rate-limit: delay between requests
+            req = urllib.request.Request(f"https://www.youtube.com/watch?v={vid}",
+                                        headers={"User-Agent": "Mozilla/5.0 (dailybharat10.com site build)"})
+            with urllib.request.urlopen(req, timeout=20) as r:
+                page = r.read().decode("utf8", "replace")
+            m = re.search(r'"lengthSeconds":"(\d+)"', page)
+            if m:
+                return int(m.group(1))
+            m = re.search(r'itemprop="duration" content="PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?"', page)
+            if m and any(m.groups()):
+                h, mi, s = (int(x or 0) for x in m.groups())
+                return h * 3600 + mi * 60 + s
+            return None
+        except urllib.error.HTTPError as e:
+            if e.code == 429:  # rate limited: exponential backoff
+                backoff = (2 ** attempt) * 5
+                print(f"duration fetch rate-limited for {vid}, retrying in {backoff}s...", file=sys.stderr)
+                time.sleep(backoff)
+                continue
+            raise  # other HTTP errors: fail immediately
+    raise Exception("duration fetch exhausted retries after 429 errors")
 
 
 def fill_durations(vids):
     todo = [v for v in sorted(vids.values(), key=lambda v: v["published"], reverse=True)
             if not v.get("duration_sec")][:MAX_DURATION_FETCHES]
-    for v in todo:
+    if not todo:
+        return  # all videos already have durations cached
+
+    for i, v in enumerate(todo):
         try:
             sec = fetch_duration(v["id"])
         except Exception as exc:  # network/page change: leave it unset, retry next build
-            print("duration fetch failed for", v["id"], exc, file=sys.stderr)
+            print(f"duration fetch failed for {v['id']} ({exc})", file=sys.stderr)
             continue
         if sec:
             v["duration_sec"] = sec
