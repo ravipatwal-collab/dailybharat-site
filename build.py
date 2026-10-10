@@ -74,7 +74,11 @@ def fetch_feed():
 
 def classify(v):
     t, d = v["title"], v["desc"]
-    if unicodedata.normalize("NFC", t).startswith("आज की ताज़ा खबर"):
+    tn = unicodedata.normalize("NFC", t)
+    # The bulletin title lead changed on 2026-10-01 (old lead -> "आज दिन भर की बड़ी
+    # ख़बरें"); accept both. The Shorts' "आज दिन भर की 3 बड़ी ख़बरें" does not match.
+    leads = ("आज की ताज़ा खबर", "आज दिन भर की बड़ी ख़बरें", "आज दिन भर की बड़ी खबरें")
+    if any(tn.startswith(unicodedata.normalize("NFC", lead)) for lead in leads):
         return "bulletin"
     if "ख़बरें" in unicodedata.normalize("NFC", t) and ("100" in t or "१००" in t):
         return "hundred"
