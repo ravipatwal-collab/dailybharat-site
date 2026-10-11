@@ -1,5 +1,62 @@
 [
  {
+  "id": "PLOQnB85bCe8Y",
+  "color": 6,
+  "video_ids": [
+   "hGKsF6ehf6c"
+  ],
+  "title": "मध्य प्रदेश समाचार | Madhya Pradesh News Hindi",
+  "slug": "madhya-pradesh-news-hindi"
+ },
+ {
+  "id": "PLPB132KK4Pg0",
+  "color": 7,
+  "video_ids": [
+   "pbvTNv8Rdsc"
+  ],
+  "title": "राजस्थान समाचार | Rajasthan News Hindi",
+  "slug": "rajasthan-news-hindi"
+ },
+ {
+  "id": "PLU4dGL9dQe2I",
+  "color": 0,
+  "video_ids": [
+   "yA1EZ370pO4"
+  ],
+  "title": "बिहार समाचार | Bihar News Hindi",
+  "slug": "bihar-news-hindi"
+ },
+ {
+  "id": "PLI3qU7CjQqWE",
+  "color": 1,
+  "video_ids": [
+   "UIjPcfOQcTc"
+  ],
+  "title": "उत्तर प्रदेश समाचार | Uttar Pradesh News Hindi",
+  "slug": "uttar-pradesh-news-hindi"
+ },
+ {
+  "id": "PLRwJ3CrlLDNU",
+  "color": 2,
+  "video_ids": [
+   "hGKsF6ehf6c",
+   "pbvTNv8Rdsc",
+   "yA1EZ370pO4",
+   "UIjPcfOQcTc"
+  ],
+  "title": "राज्यों की हफ़्ते भर की ख़बरें | Daily Bharat State Weekly News",
+  "slug": "daily-bharat-state-weekly-news"
+ },
+ {
+  "id": "PLKhHHnrKLgCk",
+  "color": 3,
+  "video_ids": [
+   "Op5Fz2mOdHI"
+  ],
+  "title": "साप्ताहिक करेंट अफेयर्स | Weekly Current Affairs Hindi",
+  "slug": "weekly-current-affairs-hindi"
+ },
+ {
   "id": "PLeoHGuQUENgA",
   "color": 5,
   "video_ids": [
@@ -91,6 +148,8 @@
   "id": "PLLywfg6K5S0w",
   "color": 1,
   "video_ids": [
+   "2jfZSYVRTuM",
+   "YHJaxBTFy4Q",
    "NekEZXa6eE4",
    "hUost5Mnfzw",
    "4fUzh5x5t_c",
@@ -157,6 +216,7 @@
   "id": "PLO0eoDyu_EIc",
   "color": 3,
   "video_ids": [
+   "UX69hE6HM3o",
    "loYcbNnQUtE",
    "O_8vCfIkJJ4",
    "y-b9S5TZqqk",
@@ -259,6 +319,7 @@
   "id": "PLEcM4ELH08mU",
   "color": 7,
   "video_ids": [
+   "KwymV2a4Bt8",
    "3fzhGAdf3ss",
    "3QciGpxcqpg",
    "kvM6rvbkPH4",
