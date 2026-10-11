@@ -164,6 +164,19 @@ def load_videos():
         PLAYLISTS = sync_playlists(vids)
     except Exception as exc:  # never lose the video pages over a playlist problem
         print("playlist sync failed:", exc, file=sys.stderr)
+    # videos taken off the site on purpose (2026-10-11: a bulletin replaced by a
+    # corrected re-upload and made unlisted). The feed or a playlist can still
+    # carry them, so they are dropped HERE, after every merge.
+    hidden = set()
+    hf = ROOT / "data" / "hidden_videos.json"
+    if hf.exists():
+        hidden = set(json.loads(hf.read_text(encoding="utf8")))
+    for hid in hidden:
+        vids.pop(hid, None)
+        page = ROOT / "news" / hid
+        if page.exists():
+            import shutil
+            shutil.rmtree(page, ignore_errors=True)
     for v in vids.values():
         v["kind"] = classify(v)
     out = sorted(vids.values(), key=lambda v: v["published"], reverse=True)
