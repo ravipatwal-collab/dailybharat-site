@@ -1087,7 +1087,7 @@ def build_misc(vids):
             + f"<video:publication_date>{v['published']}</video:publication_date></video:video></url>")
     xml.append("</urlset>")
     (ROOT / "sitemap.xml").write_text("\n".join(xml), encoding="utf8")
-    (ROOT / "robots.txt").write_text(f"User-agent: *\nAllow: /\n\nSitemap: {SITE}/sitemap.xml\n", encoding="utf8")
+    (ROOT / "robots.txt").write_text(f"User-agent: *\nAllow: /\nDisallow: /go/\nDisallow: /today/\n\nSitemap: {SITE}/sitemap.xml\n", encoding="utf8")
     (ROOT / "manifest.webmanifest").write_text(json.dumps({
         "name": NAME, "short_name": "Daily Bharat", "lang": "hi", "start_url": "/", "display": "standalone",
         "background_color": "#0a1233", "theme_color": "#0a1233",
@@ -1102,6 +1102,39 @@ def build_misc(vids):
         head(f"Page not found | {NAME}", "Page not found.", "/404.html").replace('index,follow', 'noindex') + body, encoding="utf8")
 
 
+# Short links that open the latest morning bulletin on YouTube. One page per
+# surface so each can carry its own address (Instagram bio -> /go/ig/, Reel
+# captions, Stories, Facebook, Telegram, WhatsApp). Rebuilt with the site, so
+# they follow the newest bulletin; noindex and disallowed in robots.txt.
+GO_SOURCES = ("ig", "ig-story", "ig-reel", "fb", "tg", "wa", "site", "yt")
+
+
+def redirect_page(target, label):
+    t = html.escape(target, quote=True)
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>{esc(label)} | {NAME}</title>
+<link rel="canonical" href="{t}">
+<meta http-equiv="refresh" content="0;url={t}">
+<script>location.replace({json.dumps(target)});</script>
+<style>body{{font-family:system-ui,sans-serif;background:#0a1233;color:#fff;text-align:center;padding:4rem 1rem}}a{{color:#ffcc00}}</style>
+</head><body><p>Opening YouTube&hellip;</p><p><a href="{t}">Tap here if it does not open</a></p></body></html>
+"""
+
+
+def build_redirects(vids):
+    latest = next((v for v in vids if v["kind"] == "bulletin"), None)
+    target = f"https://www.youtube.com/watch?v={latest['id']}" if latest else YT
+    label = "Today's bulletin"
+    pages = {"today": target, **{f"go/{s}": target for s in GO_SOURCES}}
+    for path, url in pages.items():
+        d = ROOT / path
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "index.html").write_text(redirect_page(url, label), encoding="utf8")
+
+
 def main():
     vids = load_videos()
     if not vids:
@@ -1114,6 +1147,7 @@ def main():
     build_current_affairs(vids)
     build_legal()
     build_misc(vids)
+    build_redirects(vids)
     print(f"built {len(vids)} videos")
 
 
