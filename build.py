@@ -1117,8 +1117,9 @@ def redirect_page(target, label):
 <meta name="robots" content="noindex,nofollow">
 <title>{esc(label)} | {NAME}</title>
 <link rel="canonical" href="{t}">
-<meta http-equiv="refresh" content="0;url={t}">
-<script>location.replace({json.dumps(target)});</script>
+<meta http-equiv="refresh" content="3;url={t}">
+<script data-goatcounter="https://dailybharat10.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+<script>setTimeout(function(){{location.replace({json.dumps(target)});}},500);</script>
 <style>body{{font-family:system-ui,sans-serif;background:#0a1233;color:#fff;text-align:center;padding:4rem 1rem}}a{{color:#ffcc00}}</style>
 </head><body><p>Opening YouTube&hellip;</p><p><a href="{t}">Tap here if it does not open</a></p></body></html>
 """
