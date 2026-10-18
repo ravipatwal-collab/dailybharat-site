@@ -55,10 +55,25 @@ ICON = {
 
 
 # ---------------------------------------------------------------- data ---
+def _fetch_bytes(url, attempts=4):
+    """GET with retries: YouTube's feed 404s intermittently from GitHub runners
+    (2026-10-18: one 404 left /go/* on the previous bulletin for ~12 hours)."""
+    import time
+    last = None
+    for i in range(attempts):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (dailybharat10.com site build)",
+                                                       "Accept-Language": "en"})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return r.read()
+        except Exception as exc:
+            last = exc
+            time.sleep(3 * (i + 1))
+    raise last
+
+
 def fetch_feed():
-    req = urllib.request.Request(FEED, headers={"User-Agent": "Mozilla/5.0 (dailybharat10.com site build)"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        root = ET.fromstring(r.read())
+    root = ET.fromstring(_fetch_bytes(FEED))
     ns = {"a": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015",
           "m": "http://search.yahoo.com/mrss/"}
     out = []
@@ -69,6 +84,26 @@ def fetch_feed():
             "published": e.find("a:published", ns).text,
             "desc": e.find("m:group/m:description", ns).text or "",
         })
+    return out
+
+
+def fetch_scraped(known):
+    """Fallback when the feed is down: video ids from the channel's Videos page,
+    any id not already stored described through YouTube's oembed (title only;
+    enough to classify a bulletin and to point /go/* at it)."""
+    page = _fetch_bytes(f"https://www.youtube.com/channel/{CHANNEL_ID}/videos").decode("utf8", "ignore")
+    ids = list(dict.fromkeys(re.findall(r'"videoId":"([A-Za-z0-9_-]{11})"', page)))
+    now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    out = []
+    for vid in ids[:12]:
+        if vid in known:
+            continue
+        try:
+            o = json.loads(_fetch_bytes("https://www.youtube.com/oembed?format=json&url="
+                                        f"https://www.youtube.com/watch?v={vid}", attempts=2))
+        except Exception:
+            continue
+        out.append({"id": vid, "title": o.get("title", ""), "published": now, "desc": ""})
     return out
 
 
@@ -156,8 +191,13 @@ def load_videos():
             # merge, never replace: the stored record carries fields the
             # feed does not (duration_sec)
             vids[v["id"]] = {**vids.get(v["id"], {}), **v}
-    except Exception as exc:  # network down: build from what we already have
-        print("feed fetch failed, using stored data:", exc, file=sys.stderr)
+    except Exception as exc:  # feed down: scrape the channel page for new uploads
+        print("feed fetch failed, trying the channel page:", exc, file=sys.stderr)
+        try:
+            for v in fetch_scraped(vids):
+                vids[v["id"]] = v
+        except Exception as exc2:  # network down: build from what we already have
+            print("channel page failed too, using stored data:", exc2, file=sys.stderr)
     fill_durations(vids)
     global PLAYLISTS
     try:
