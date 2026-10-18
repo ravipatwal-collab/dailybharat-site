@@ -3,6 +3,10 @@ on:
   schedule:
     - cron: "20 */2 * * *"   # every 2 hours: picks up the new YouTube upload
   workflow_dispatch:
+    inputs:
+      video_id:
+        description: "YouTube id just uploaded (sent by the DailyBharat VPS); added even if the feed has not listed it yet"
+        required: false
   push:
     branches: [main]
     paths: [build.py, translate.py, "content/**", "assets/style.css", "assets/site.js"]
@@ -20,6 +24,8 @@ jobs:
         with:
           python-version: "3.12"
       - name: Fetch latest videos and rebuild pages
+        env:
+          EXTRA_VIDEO_ID: ${{ inputs.video_id }}
         run: python build.py
       - name: Translate new videos to English (only if GEMINI_API_KEY secret is set)
         env:

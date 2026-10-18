@@ -9,6 +9,7 @@ scheduled workflow only commits when there is something new.
 """
 import html
 import json
+import os
 import re
 import sys
 import unicodedata
@@ -198,6 +199,18 @@ def load_videos():
                 vids[v["id"]] = v
         except Exception as exc2:  # network down: build from what we already have
             print("channel page failed too, using stored data:", exc2, file=sys.stderr)
+    # An upload the VPS has just announced (workflow_dispatch input): YouTube's
+    # feed can take hours to list it, so add it from oembed here.
+    extra = os.environ.get("EXTRA_VIDEO_ID", "").strip()
+    if extra and extra not in vids:
+        try:
+            o = json.loads(_fetch_bytes("https://www.youtube.com/oembed?format=json&url="
+                                        f"https://www.youtube.com/watch?v={extra}", attempts=3))
+            vids[extra] = {"id": extra, "title": o.get("title", ""),
+                           "published": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+                           "desc": ""}
+        except Exception as exc:
+            print("announced video not readable yet:", extra, exc, file=sys.stderr)
     fill_durations(vids)
     global PLAYLISTS
     try:
