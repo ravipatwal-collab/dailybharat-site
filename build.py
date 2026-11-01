@@ -27,9 +27,13 @@ SUBSCRIBE = YT + "?sub_confirmation=1"
 FACEBOOK = "https://www.facebook.com/dailybharat10/"   # the Page, not the personal profile
 INSTAGRAM = "https://www.instagram.com/dailybharat10/"
 FEED = f"https://www.youtube.com/feeds/videos.xml?channel_id={CHANNEL_ID}"
+COOKING_CHANNEL_ID = "UCQ49JHxAjvrKsSmd6Xb65TQ"   # "Cooking with Supriya" (@supipatwal), a separate family channel
+COOKING_URL = "https://www.youtube.com/@supipatwal"
+COOKING_FEED = f"https://www.youtube.com/feeds/videos.xml?channel_id={COOKING_CHANNEL_ID}"
 NAME = "Daily Bharat News"
 EMAIL = "dailybharat10@gmail.com"
 DATA = ROOT / "data" / "videos.json"
+COOKING_DATA = ROOT / "data" / "cooking.json"
 IST = timezone(timedelta(hours=5, minutes=30))
 WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 MONTH = ["January", "February", "March", "April", "May", "June", "July", "August",
@@ -350,7 +354,66 @@ def tr_list(v, key, orig):
 
 # -------------------------------------------------------------- layout ---
 NAV = [("/", "Home"), ("/#bulletin", "Daily Bulletin"), ("/#hundred", "100 News"),
-       ("/current-affairs/", "Current Affairs"), ("/topics/", "Topics"), ("/archive/", "All Videos"), ("/#about", "About")]
+       ("/current-affairs/", "Current Affairs"), ("/topics/", "Topics"), ("/archive/", "All Videos"), ("/#cooking", "Cooking"), ("/#about", "About")]
+
+
+def load_cooking():
+    """Newest video of the Cooking with Supriya channel, or None. Kept in data/cooking.json so a
+    failed feed fetch keeps showing the last good video; these videos never enter the news list."""
+    try:
+        root = ET.fromstring(_fetch_bytes(COOKING_FEED, attempts=2))
+        ns = {"a": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015"}
+        e = root.find("a:entry", ns)
+        if e is not None:
+            v = {"id": e.find("yt:videoId", ns).text, "title": (e.find("a:title", ns).text or "").strip(),
+                 "published": e.find("a:published", ns).text}
+            COOKING_DATA.write_text(json.dumps(v, ensure_ascii=False, indent=1), encoding="utf8")
+            return v
+    except Exception as exc:
+        print("cooking feed failed, using cache:", exc)
+    try:
+        return json.loads(COOKING_DATA.read_text(encoding="utf8"))
+    except Exception:
+        return None
+
+
+def _cook_title(v):
+    t = re.sub(r"(\s*#\w+)+\s*$", "", v["title"])        # trailing hashtags
+    return re.sub(r"[🀀-🿿☀-➿️\s]+$", "", t).strip() or v["title"]
+
+
+def _cook_thumb(v):
+    url = f"https://www.youtube.com/watch?v={v['id']}"
+    return (f'<a class="ck-thumb" href="{url}" target="_blank" rel="noopener" aria-label="Watch: {esc(v["title"])}">'
+            f'<img src="https://i.ytimg.com/vi/{v["id"]}/hqdefault.jpg" alt="{esc(v["title"])}" loading="lazy" width="480" height="360">'
+            f'<span class="ck-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg></span></a>')
+
+
+def cooking_section(v):
+    if not v:
+        return ""
+    url = f"https://www.youtube.com/watch?v={v['id']}"
+    return f"""<section class="sec k-amber" id="cooking">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-bar"></span><div><h2>Cooking with Supriya</h2><p>Easy home recipes from our family kitchen. Always the newest video.</p></div></div>
+    <div class="ck-grid">
+      {_cook_thumb(v)}
+      <div><span class="ck-kicker">Latest recipe &middot; {esc(dt_ist(v['published']).strftime('%d %b %Y'))}</span>
+        <h3>{esc(_cook_title(v))}</h3>
+        <div class="cta-row"><a class="btn btn-amber" href="{url}" target="_blank" rel="noopener">Watch recipe</a>
+        <a class="btn btn-ghost" href="{COOKING_URL}" target="_blank" rel="noopener"><span>More on @supipatwal</span>{ICON['arrow']}</a></div></div>
+    </div>
+  </div>
+</section>"""
+
+
+def cooking_card(v):
+    if not v:
+        return ""
+    return f"""<section class="sec ck-card-sec"><div class="wrap narrow"><div class="ck-card">
+  {_cook_thumb(v)}
+  <div><b class="ck-kicker">From our family &middot; Cooking with Supriya</b><div class="ck-title">{esc(_cook_title(v))}</div>
+  <a href="{COOKING_URL}" target="_blank" rel="noopener">See all recipes &rarr;</a></div></div></div></section>"""
 
 
 def hi(s):
@@ -545,6 +608,7 @@ FAQ = [
 
 
 def build_home(vids):
+    cook = load_cooking()
     latest = next((v for v in vids if v["kind"] == "bulletin"), vids[0])
     title = "Daily Bharat News: Today's Hindi News Bulletin, Top India & World Headlines"
     desc = ("Watch the Daily Bharat News Hindi bulletin every morning: about 50 top headlines from India and the world, "
@@ -611,6 +675,7 @@ def build_home(vids):
 {section('hundred','hundred',vids,3,"More news in less time: the rest of the day's headlines.")}
 {section('stories','story',vids,6,"One big story, investigated and explained clearly.")}
 {section('shorts','short',vids,6)}
+{cooking_section(cook)}
 {topics_section(vids)}
 <section class="sec why-sec">
   <div class="wrap">
@@ -642,6 +707,7 @@ def build_home(vids):
     <div class="faq">{faq}</div>
   </div>
 </section>
+{cooking_card(cook)}
 <section class="sec about" id="about">
   <div class="wrap narrow">
     <h2>About Daily Bharat News</h2>

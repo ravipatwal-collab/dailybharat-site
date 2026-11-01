@@ -188,3 +188,19 @@ img{max-width:100%;height:auto;display:block}a{color:inherit}
 .ca h2{font-family:var(--head);font-size:clamp(20px,2.6vw,26px);margin:34px 0 12px}.ca .cta-row{margin:14px 0 6px}.ca-list{padding-left:20px;line-height:1.7}.ca-list li{margin-bottom:4px}
 .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card);box-shadow:var(--shadow)}
 .ca-table{border-collapse:collapse;width:100%;min-width:640px;font-size:15px}.ca-table th,.ca-table td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}.ca-table thead th{background:var(--line);font-weight:800}.ca-table tbody th{font-weight:700}.ca-table tr:last-child th,.ca-table tr:last-child td{border-bottom:0}
+
+/* Cooking with Supriya */
+.ck-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:28px;align-items:center}
+.ck-thumb{position:relative;display:block;border-radius:16px;overflow:hidden;aspect-ratio:16/9;box-shadow:var(--shadow)}
+.ck-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .5s}.ck-thumb:hover img{transform:scale(1.05)}
+.ck-play{position:absolute;inset:0;display:grid;place-items:center}
+.ck-play svg{width:64px;height:64px;padding:16px 14px 16px 18px;border-radius:50%;background:rgba(229,32,46,.92);color:#fff;box-sizing:border-box}
+.ck-kicker{font-size:13px;font-weight:700;color:#b45309;letter-spacing:.06em;text-transform:uppercase}
+.ck-grid h3{font-family:var(--head);margin:6px 0 14px;font-size:22px;line-height:1.4}
+.btn-amber{background:#f59e0b;color:#fff}.btn-ghost{color:var(--ink);border:1px solid var(--line);background:transparent;margin-left:8px}
+.sec.k-amber{--acc:#f59e0b}
+.ck-card-sec{padding-top:0}
+.ck-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;display:grid;grid-template-columns:200px 1fr;gap:18px;align-items:center}
+.ck-card .ck-kicker{font-size:12px}.ck-title{font-weight:700;margin:4px 0 8px;line-height:1.4}.ck-card a:not(.ck-thumb){font-weight:600;color:var(--blue)}
+@media (prefers-color-scheme:dark){.ck-kicker{color:#fbbf24}.ck-card a:not(.ck-thumb){color:#93c5fd}}
+@media (max-width:800px){.ck-grid{grid-template-columns:1fr}.ck-card{grid-template-columns:1fr}.btn-ghost{margin-left:0}}
