@@ -16,7 +16,13 @@
   if (!(seek > 0)) seek = 0;
   document.querySelectorAll('.player, .thumb[data-id]').forEach(function (p) {
     var b = p.querySelector('.player-btn');
-    if (!b) return;
+    if (!b) {
+      // Watch pages carry a real <iframe> in the HTML (so Google can see the video);
+      // a ?t=<seconds> link just restarts it at that second.
+      var fr = p.querySelector('iframe');
+      if (fr && p.dataset.watch && seek) fr.src = fr.src + '&start=' + seek + '&autoplay=1';
+      return;
+    }
     var isMain = p.classList.contains('player') && document.querySelector('main.watch');
     b.addEventListener('click', function (ev) {
       var f = document.createElement('iframe');

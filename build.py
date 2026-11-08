@@ -753,6 +753,25 @@ def key_moments(v, url, chapters, names):
     return out
 
 
+_BOILER = re.compile(r"^\s*(YouTube|Facebook|Instagram|Telegram|Twitter|WhatsApp|Subscribe|Follow|Join)", re.I)
+
+
+def real_paras(paras):
+    """Description paragraphs that actually say something: not a bare channel/social
+    line ("YouTube: @DailyBharat10") and not a pipe-separated keyword run."""
+    out = []
+    for p in paras:
+        p = p.strip()
+        bare = re.sub(r"https?://\S+|@\w+", " ", p)
+        bare = re.sub(r"^[\W_]+", "", bare)
+        if (_BOILER.match(bare) or p.count("|") >= 2 or ("|" in p and p.count(",") >= 4)
+                or "AI-generated" in p or p.startswith("Image credits")
+                or len(re.findall(r"[A-Za-z]", bare)) < 40):
+            continue
+        out.append(p)
+    return out
+
+
 def build_watch(v, vids):
     label, cls, _ = KINDS[v["kind"]]
     ttl = vt(v)
@@ -764,14 +783,17 @@ def build_watch(v, vids):
     kw_e, kw_lang = tr_list(v, "keywords", kwlines)
     paras = paras3 + paras[3:]
     phrases = [p.strip() for ln in kwlines for p in ln.split("|")[-1].split(",") if p.strip()]
-    summary = paras[0] if paras else ""
     dline = hi_date(v["published"])
-    meta_desc = f"{label} from Daily Bharat News, {dline}: {ttl}. " + (summary[:120] + "…" if summary else "Watch on YouTube.")
+    paras = real_paras(paras)
+    has_real = bool(paras)
+    summary = paras[0] if paras else (
+        f"{label} from {NAME} on {dline}: {ttl}. Hindi news in simple language; watch the video above.")
+    meta_desc = f"{label} from Daily Bharat News, {dline}: {ttl}. " + (summary[:120] + "…" if has_real else "Watch the video here or on YouTube.")
     page_title = f"{ttl} | {label}, {dline} | {NAME}"
     url = watch_url(v)
     video_ld = {
         "@context": "https://schema.org", "@type": "VideoObject", "name": ttl,
-        "description": (summary or ttl)[:500], "thumbnailUrl": [thumb(v, "maxres"), thumb(v)],
+        "description": summary[:500], "thumbnailUrl": [thumb(v, "maxres"), thumb(v)],
         "uploadDate": v["published"], "embedUrl": f"https://www.youtube.com/embed/{v['id']}",
         "url": url, "inLanguage": "hi", "publisher": ORG,
         "isFamilyFriendly": True,
@@ -789,7 +811,8 @@ def build_watch(v, vids):
             f'<li><a href="https://www.youtube.com/watch?v={v["id"]}&amp;t={ts_seconds(t)}s" target="_blank" rel="noopener"><b>{t}</b> <span{chap_lang}>{esc(n)}</span></a></li>'
             for (t, _), n in zip(chapters, chap_names))
         chap_html = f'<section class="panel"><h2>What is in this video</h2><ol class="chapters">{rows}</ol></section>'
-    sum_html = "".join(f'<p{para_lang}>{esc(p)}</p>' for p in paras3)
+    paras3 = real_paras(paras3)
+    sum_html = "".join(f'<p{para_lang}>{esc(p)}</p>' for p in paras3) or f"<p>{esc(summary)}</p>"
     bl_html = ""
     if bullets:
         bl_html = ('<section class="panel"><h2>Headlines covered</h2><ul class="heads">'
@@ -825,12 +848,8 @@ def build_watch(v, vids):
   <h1{vl(v)}>{esc(ttl)}</h1>
   <p class="meta"><time datetime="{v['published']}">{dline}</time> &middot; {label} &middot; Hindi news by {NAME}</p>
   {topic_chips(v, vids)}
-  <div class="player {'player-short' if v['kind']=='short' else ''}" data-id="{v['id']}" data-subscribe="1">
-    <button class="player-btn" type="button" aria-label="Play video: {esc(ttl)}">
-      <img src="{thumb(v,'maxres')}" onerror="this.onerror=null;this.src='{thumb(v)}'" width="1280" height="720" alt="{esc(ttl)}">
-      <span class="play big">{ICON['play']}</span>
-    </button>
-    <noscript><a href="https://www.youtube.com/watch?v={v['id']}">Watch on YouTube</a></noscript>
+  <div class="player {'player-short' if v['kind']=='short' else ''}" data-id="{v['id']}" data-watch="1">
+    <iframe src="https://www.youtube.com/embed/{v['id']}?rel=0&amp;modestbranding=1" title="{esc(ttl)}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
   </div>
   {yt_subscribe_widget()}
   <div class="cta-row center-row">
