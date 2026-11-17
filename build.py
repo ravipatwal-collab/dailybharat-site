@@ -1225,7 +1225,7 @@ def build_misc(vids):
             + f"<video:publication_date>{v['published']}</video:publication_date></video:video></url>")
     xml.append("</urlset>")
     (ROOT / "sitemap.xml").write_text("\n".join(xml), encoding="utf8")
-    (ROOT / "robots.txt").write_text(f"User-agent: *\nAllow: /\nDisallow: /go/\nDisallow: /today/\n\nSitemap: {SITE}/sitemap.xml\n", encoding="utf8")
+    (ROOT / "robots.txt").write_text(f"User-agent: *\nAllow: /\nDisallow: /go/\nDisallow: /today/\nDisallow: /100news/\n\nSitemap: {SITE}/sitemap.xml\n", encoding="utf8")
     (ROOT / "manifest.webmanifest").write_text(json.dumps({
         "name": NAME, "short_name": "Daily Bharat", "lang": "hi", "start_url": "/", "display": "standalone",
         "background_color": "#0a1233", "theme_color": "#0a1233",
@@ -1267,11 +1267,16 @@ def build_redirects(vids):
     latest = next((v for v in vids if v["kind"] == "bulletin"), None)
     target = f"https://www.youtube.com/watch?v={latest['id']}" if latest else YT
     label = "Today's bulletin"
-    pages = {"today": target, **{f"go/{s}": target for s in GO_SOURCES}}
-    for path, url in pages.items():
+    pages = {"today": (target, label), **{f"go/{s}": (target, label) for s in GO_SOURCES}}
+    # /100news -> the latest "100 News" video (2026-11-17, Ravi): description lines of the
+    # evening bulletin and others use this always-current link.
+    hundred = next((v for v in vids if v["kind"] == "hundred"), None)
+    pages["100news"] = (f"https://www.youtube.com/watch?v={hundred['id']}" if hundred else YT,
+                        "Latest 100 News")
+    for path, (url, lbl) in pages.items():
         d = ROOT / path
         d.mkdir(parents=True, exist_ok=True)
-        (d / "index.html").write_text(redirect_page(url, label), encoding="utf8")
+        (d / "index.html").write_text(redirect_page(url, lbl), encoding="utf8")
 
 
 def main():
