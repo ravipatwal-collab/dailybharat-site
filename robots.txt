@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /go/
 Disallow: /today/
+Disallow: /100news/
 
 Sitemap: https://www.dailybharat10.com/sitemap.xml
